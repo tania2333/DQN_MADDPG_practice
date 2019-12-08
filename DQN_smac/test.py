@@ -110,7 +110,6 @@ if __name__ == "__main__":
                                   batch_size=32,
                                   save_model_freq=10000,
                                   load_model=True,
-                                  test_flag=True,
                                   )
 
                 RL_set.append(RL)

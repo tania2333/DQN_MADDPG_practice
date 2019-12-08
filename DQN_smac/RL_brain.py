@@ -53,7 +53,6 @@ class DeepQNetwork:
         self.min_epsilon = min_epsilon
         self.epsilon = self.max_epsilon
         self.load_model = load_model
-        self.test_flag = test_flag
 
         # total learning step
         self.learn_step_counter = 0
@@ -70,23 +69,22 @@ class DeepQNetwork:
         self.replace_target_op = [tf.assign(t, e) for t, e in zip(t_params, e_params)]
 
         self.cost_his = []
-        self.sess, self.saver, self.summary_placeholders, self.update_ops, self.summary_op, self.summary_writer, self.summary_vars = self.init_sess()
+        if(self.load_model):
+            model_load_steps = 1100000
+            model_file_load = os.path.join("models/", "agent_No_" + str(self.agent_id) + "/",
+                                           str(model_load_steps) + "_" + "model_segment_training/", "8m")
+            U.load_state(model_file_load, self.sess)
+            print("model trained for %s steps of agent %s have been loaded"%(model_load_steps, self.agent_id))
+        else:
+            self.sess, self.saver, self.summary_placeholders, self.update_ops, self.summary_op, self.summary_writer, self.summary_vars = self.init_sess()
 
         # 将网络计算的初始化工作完成
     def init_sess(self):
         # Summary for tensorboard
         summary_placeholders, update_ops, summary_op, summary_vars = self.setup_summary()
-        if(self.test_flag==False):
-            fileWritePath = os.path.join("logs/", "agent_No_" + str(self.agent_id) + "/")
-            summary_writer = tf.summary.FileWriter(fileWritePath, self.sess.graph)
-
-        if self.load_model:
-            model_file_load = os.path.join("models/", "agent_No_" + str(self.agent_id) + "/",
-                                           str(1140000) + "_" + "model_segment_training/", "8m")
-            U.load_state(model_file_load, self.sess)
-
-        else:
-            self.sess.run(tf.global_variables_initializer())
+        fileWritePath = os.path.join("logs/", "agent_No_" + str(self.agent_id) + "/")
+        summary_writer = tf.summary.FileWriter(fileWritePath, self.sess.graph)
+        self.sess.run(tf.global_variables_initializer())
 
         # Load the file if the saved file exists
 
@@ -251,8 +249,9 @@ class DeepQNetwork:
 
         if (self.learn_step_counter % self.save_model_freq == 0):
             model_file_save = os.path.join("models/", "agent_No_"+str(self.agent_id)+"/", str(self.learn_step_counter) + "_" + "model_segment_training/", "8m")
-            if any(model_file_save):
-                os.makedirs(model_file_save, exist_ok=True)
+            dirname = os.path.dirname(model_file_save)
+            if any(dirname):
+                os.makedirs(dirname, exist_ok=True)
             self.saver.save(self.sess, model_file_save)
             print("Model trained for %s times is saved"%self.learn_step_counter)
 
