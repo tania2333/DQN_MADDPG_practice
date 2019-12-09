@@ -11,9 +11,7 @@ gym: 0.7.3
 """
 
 import numpy as np
-import pandas as pd
 import tensorflow as tf
-import baselines.common.tf_util as U
 import os
 import pickle
 np.random.seed(1)
@@ -70,10 +68,10 @@ class DeepQNetwork:
 
         self.cost_his = []
         if(self.load_model):
-            model_load_steps = 1100000
-            model_file_load = os.path.join("models/", "agent_No_" + str(self.agent_id) + "/",
+            model_load_steps = 30000
+            model_file_load = os.path.join("./models/", "agent_No_" + str(self.agent_id) + "/",
                                            str(model_load_steps) + "_" + "model_segment_training/", "8m")
-            U.load_state(model_file_load, self.sess)
+            self.saver.restore(self.sess, model_file_load)
             print("model trained for %s steps of agent %s have been loaded"%(model_load_steps, self.agent_id))
         else:
             self.sess, self.saver, self.summary_placeholders, self.update_ops, self.summary_op, self.summary_writer, self.summary_vars = self.init_sess()
@@ -88,7 +86,7 @@ class DeepQNetwork:
 
         # Load the file if the saved file exists
 
-        saver = tf.train.Saver()
+        saver = tf.train.Saver(max_to_keep=1e9)
 
         return self.sess, saver, summary_placeholders, update_ops, summary_op, summary_writer, summary_vars
 

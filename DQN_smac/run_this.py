@@ -105,7 +105,7 @@ if __name__ == "__main__":
     episode_len = env_info["episode_limit"]
     timesteps = 800000
     learn_freq = 1
-    steps_begin_learn = timesteps * 0.1
+    steps_begin_learn = timesteps * 0.1 / 2
     load_model = False
 
     RL_set = []
