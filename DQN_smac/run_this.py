@@ -100,16 +100,15 @@ def run_this(RL_set, n_episode, Num_Exploration, learn_freq, n_agents, ratio_tot
 
 
 if __name__ == "__main__":
-    start_time = datetime.datetime.now().strftime("%Y%m%d%H%M")
-    env = StarCraft2Env(map_name="8m", reward_only_positive=False,
+    env = StarCraft2Env(map_name="8m", reward_only_positive=False, obs_last_action=True, obs_timestep_number=True,
                         reward_scale_rate=200)  # 8m    reward_scale_rate=200
     env_info = env.get_env_info()
 
-    vector_obs_len = 80  # local observation
+    vector_obs_len = 179  # local observation 80
     n_actions = env_info["n_actions"]
     n_episode = 4000
     n_agents = env_info["n_agents"]
-    episode_len = env_info["episode_limit"]
+    # episode_len = env_info["episode_limit"]
     timesteps = 800000
     learn_freq = 1
     Num_Exploration = timesteps * 0.1 /2

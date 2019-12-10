@@ -3,7 +3,6 @@
   <component name="ChangeListManager">
     <list default="true" id="0c3ab0f8-3009-47c1-8d00-211886854aab" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/RL_brain.py" beforeDir="false" afterPath="$PROJECT_DIR$/RL_brain.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/run_this.py" beforeDir="false" afterPath="$PROJECT_DIR$/run_this.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
@@ -166,7 +165,7 @@
       <workItem from="1575423748140" duration="25532000" />
       <workItem from="1575541206114" duration="10776000" />
       <workItem from="1575593849573" duration="48216000" />
-      <workItem from="1575966145243" duration="9372000" />
+      <workItem from="1575966145243" duration="10337000" />
     </task>
     <servers />
   </component>
@@ -200,7 +199,7 @@
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
     <SUITE FILE_PATH="coverage/DQN_smac$RL_brain.coverage" NAME="RL_brain Coverage Results" MODIFIED="1575462420169" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/DQN_smac$test_example.coverage" NAME="test_example Coverage Results" MODIFIED="1575792201313" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
-    <SUITE FILE_PATH="coverage/DQN_smac$run_this.coverage" NAME="run_this Coverage Results" MODIFIED="1575979514421" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/DQN_smac$run_this.coverage" NAME="run_this Coverage Results" MODIFIED="1575982045163" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/DQN_smac$test.coverage" NAME="test Coverage Results" MODIFIED="1575886136800" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
   </component>
 </project>
