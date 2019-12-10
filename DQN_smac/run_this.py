@@ -4,7 +4,7 @@ import datetime
 import numpy as np
 import tensorflow as tf
 
-def run_this(RL_set, n_episode, steps_begin_learn, learn_freq, n_agents, ratio_total_reward):
+def run_this(RL_set, n_episode, Num_Exploration, learn_freq, n_agents, ratio_total_reward):
     step = 0
     training_step = 0
     for episode in range(n_episode):
@@ -82,10 +82,10 @@ def run_this(RL_set, n_episode, steps_begin_learn, learn_freq, n_agents, ratio_t
 
             step += 1
 
-            if (step == steps_begin_learn):
+            if (step == Num_Exploration):
                 print("Training starts.")
 
-            if (step > steps_begin_learn) and (step % learn_freq == 0):
+            if (step > Num_Exploration) and (step % learn_freq == 0):
                 for agent_id in range(n_agents):
                     RL_set[agent_id].learn()
                 training_step += 1
@@ -112,7 +112,8 @@ if __name__ == "__main__":
     episode_len = env_info["episode_limit"]
     timesteps = 800000
     learn_freq = 1
-    steps_begin_learn = timesteps * 0.1 /2
+    Num_Exploration = timesteps * 0.1 /2
+    Num_Training = timesteps - Num_Exploration
     ratio_total_reward = 0.1
 
     RL_set = []
@@ -129,6 +130,7 @@ if __name__ == "__main__":
                                   n_features=vector_obs_len,
                                   sess=sess,
                                   agent_id=i,
+                                  num_training=Num_Training,
                                   learning_rate=0.002,
                                   reward_decay=0.99,
                                   replace_target_iter=5000,
@@ -141,4 +143,4 @@ if __name__ == "__main__":
                 RL_set.append(RL)
 
     # run_this写成一个所有智能体执行的函数
-    run_this(RL_set, n_episode, steps_begin_learn, learn_freq, n_agents, ratio_total_reward)
+    run_this(RL_set, n_episode, Num_Exploration, learn_freq, n_agents, ratio_total_reward)

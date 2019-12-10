@@ -26,6 +26,7 @@ class DeepQNetwork:
             n_features,
             sess,
             agent_id,
+            num_training,
             learning_rate=0.01,
             reward_decay=0.9,
             replace_target_iter=300,
@@ -35,12 +36,12 @@ class DeepQNetwork:
             max_epsilon=1,
             min_epsilon=0.1,
             load_model=False,
-            test_flag=False,
     ):
         self.n_actions = n_actions
         self.n_features = n_features
         self.sess = sess
         self.agent_id = agent_id
+        self.num_training = num_training
         self.lr = learning_rate
         self.gamma = reward_decay
         self.replace_target_iter = replace_target_iter
@@ -140,7 +141,7 @@ class DeepQNetwork:
             with tf.variable_scope('l2'):
                 w2 = tf.get_variable('w2', [n_l1, n_l2], initializer=w_initializer, collections=c_names)
                 b2 = tf.get_variable('b2', [1, n_l2], initializer=b_initializer, collections=c_names)
-                l2 = tf.nn.relu(l1, w2) + b2
+                l2 = tf.nn.relu(tf.matmul(l1, w2)) + b2
 
             # third layer. collections is used later when assign to target net
             with tf.variable_scope('l3'):
@@ -242,7 +243,7 @@ class DeepQNetwork:
 
         # Decreasing epsilon
         if self.epsilon > self.min_epsilon:
-            self.epsilon -= self.max_epsilon/self.learn_step_counter
+            self.epsilon -= self.max_epsilon/self.num_training
 
 
         if (self.learn_step_counter % self.save_model_freq == 0):
