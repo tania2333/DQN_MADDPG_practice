@@ -69,7 +69,7 @@ class DeepQNetwork:
         self.cost_his = []
         if(self.load_model):
             model_load_steps = 30000
-            model_file_load = os.path.join("./models/", "agent_No_" + str(self.agent_id) + "/",
+            model_file_load = os.path.join("models/", "agent_No_" + str(self.agent_id) + "/",
                                            str(model_load_steps) + "_" + "model_segment_training/", "8m")
             self.saver.restore(self.sess, model_file_load)
             print("model trained for %s steps of agent %s have been loaded"%(model_load_steps, self.agent_id))
@@ -86,7 +86,7 @@ class DeepQNetwork:
 
         # Load the file if the saved file exists
 
-        saver = tf.train.Saver(max_to_keep=1e9)
+        saver = tf.train.Saver(max_to_keep=100000000)
 
         return self.sess, saver, summary_placeholders, update_ops, summary_op, summary_writer, summary_vars
 
@@ -140,7 +140,7 @@ class DeepQNetwork:
             with tf.variable_scope('l2'):
                 w2 = tf.get_variable('w2', [n_l1, n_l2], initializer=w_initializer, collections=c_names)
                 b2 = tf.get_variable('b2', [1, n_l2], initializer=b_initializer, collections=c_names)
-                l2 = tf.matmul(l1, w2) + b2
+                l2 = tf.nn.relu(l1, w2) + b2
 
             # third layer. collections is used later when assign to target net
             with tf.variable_scope('l3'):

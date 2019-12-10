@@ -4,7 +4,7 @@ import datetime
 import numpy as np
 import tensorflow as tf
 
-def run_this(RL_set, n_episode, steps_begin_learn, learn_freq, n_agents):
+def run_this(RL_set, n_episode, steps_begin_learn, learn_freq, n_agents, ratio_total_reward):
     step = 0
     training_step = 0
     for episode in range(n_episode):
@@ -25,6 +25,7 @@ def run_this(RL_set, n_episode, steps_begin_learn, learn_freq, n_agents):
             # RL choose action based on observation
             action_set_actual = []
             action_set_execute = []
+            dead_unit = []
             for agent_id in range(n_agents):
                 action_to_choose = RL_set[agent_id].choose_action(observation_set[agent_id])
                 action_set_actual.append(action_to_choose)
@@ -36,6 +37,9 @@ def run_this(RL_set, n_episode, steps_begin_learn, learn_freq, n_agents):
                     action_set_execute.append(0)      #如果该动作不能执行，并且智能体已经死亡，那么就用NO_OP代替当前动作
                 else:
                     action_set_execute.append(1)      #如果该动作不能执行，那么就用STOP动作代替
+
+                if (len(avail_actions_ind) == 1 and avail_actions_ind[0] == 0):   #判断该智能体是否已经死亡
+                    dead_unit.append(agent_id)
 
                     # RL take action and get next observation and reward
             reward_base, done, _ = env.step(action_set_execute)
@@ -51,10 +55,13 @@ def run_this(RL_set, n_episode, steps_begin_learn, learn_freq, n_agents):
                 reward_hl_en_new.append(env.get_enemy_health(agent_id))
 
                 if (action_set_execute[agent_id] > 5):
-                    reward = reward_base + (reward_hl_en_old[agent_id] - reward_hl_en_new[agent_id]) - (
+                    reward = ratio_total_reward * reward_base + (1 - ratio_total_reward) * (reward_hl_en_old[agent_id] - reward_hl_en_new[agent_id]) - (
                                 reward_hl_own_old[agent_id] - reward_hl_own_new[agent_id])
                 else:
-                    reward = reward_base - (reward_hl_own_old[agent_id] - reward_hl_own_new[agent_id])
+                    reward = ratio_total_reward * reward_base - (1 - ratio_total_reward) * (reward_hl_own_old[agent_id] - reward_hl_own_new[agent_id])
+
+                if(agent_id in dead_unit):
+                    reward = 0
 
                 episode_reward_agent[agent_id] += reward
 
@@ -105,8 +112,8 @@ if __name__ == "__main__":
     episode_len = env_info["episode_limit"]
     timesteps = 800000
     learn_freq = 1
-    steps_begin_learn = timesteps * 0.1 / 2
-    load_model = False
+    steps_begin_learn = timesteps * 0.1 /2
+    ratio_total_reward = 0.1
 
     RL_set = []
     graph_set = []
@@ -134,4 +141,4 @@ if __name__ == "__main__":
                 RL_set.append(RL)
 
     # run_this写成一个所有智能体执行的函数
-    run_this(RL_set, n_episode, steps_begin_learn, learn_freq, n_agents)
+    run_this(RL_set, n_episode, steps_begin_learn, learn_freq, n_agents, ratio_total_reward)
