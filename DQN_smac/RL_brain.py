@@ -34,7 +34,7 @@ class DeepQNetwork:
             batch_size=32,
             save_model_freq=100,
             max_epsilon=1,
-            min_epsilon=0.1,
+            min_epsilon=0,
             load_model=False,
     ):
         self.n_actions = n_actions
@@ -244,6 +244,8 @@ class DeepQNetwork:
         # Decreasing epsilon
         if self.epsilon > self.min_epsilon:
             self.epsilon -= self.max_epsilon/self.num_training
+        else:
+            self.episode = self.min_epsilon
 
 
         if (self.learn_step_counter % self.save_model_freq == 0):

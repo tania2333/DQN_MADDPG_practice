@@ -111,7 +111,7 @@ if __name__ == "__main__":
     # episode_len = env_info["episode_limit"]
     timesteps = 800000
     learn_freq = 1
-    Num_Exploration = timesteps * 0.1 /2
+    Num_Exploration = timesteps * 0.1
     Num_Training = timesteps - Num_Exploration
     ratio_total_reward = 0.1
 
