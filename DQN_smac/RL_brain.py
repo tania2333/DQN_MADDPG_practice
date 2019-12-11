@@ -98,8 +98,9 @@ class DeepQNetwork:
         with tf.variable_scope('eval_net'):
             # c_names(collections_names) are the collections to store variables                                512*512的网络结构
             c_names, n_l1, n_l2, w_initializer, b_initializer = \
-                ['eval_net_params', tf.GraphKeys.GLOBAL_VARIABLES], 512, 512,\
-                tf.random_normal_initializer(0., 0.3), tf.constant_initializer(0.1)  # config of layers
+                ['eval_net_params', tf.GraphKeys.GLOBAL_VARIABLES], 512, 512, \
+                tf.contrib.layers.xavier_initializer(), tf.contrib.layers.xavier_initializer()
+                # tf.random_normal_initializer(0., 0.3), tf.constant_initializer(0.1)  # config of layers
 
             # first layer. collections is used later when assign to target net
             with tf.variable_scope('l1'):

@@ -55,8 +55,11 @@ def run_this(RL_set, n_episode, Num_Exploration, learn_freq, n_agents, ratio_tot
                 reward_hl_en_new.append(env.get_enemy_health(agent_id))
 
                 if (action_set_execute[agent_id] > 5):
-                    reward = ratio_total_reward * reward_base + (1 - ratio_total_reward) * (reward_hl_en_old[agent_id] - reward_hl_en_new[agent_id]) - (
-                                reward_hl_own_old[agent_id] - reward_hl_own_new[agent_id])
+                    if(reward_base > 0):
+                        reward = reward_base + (reward_hl_en_old[agent_id] - reward_hl_en_new[agent_id]) - (
+                                    reward_hl_own_old[agent_id] - reward_hl_own_new[agent_id])
+                    else:
+                        reward = (reward_hl_en_old[agent_id] - reward_hl_en_new[agent_id]) - (reward_hl_own_old[agent_id] - reward_hl_own_new[agent_id])
                 else:
                     reward = ratio_total_reward * reward_base - (1 - ratio_total_reward) * (reward_hl_own_old[agent_id] - reward_hl_own_new[agent_id])
 
@@ -111,7 +114,7 @@ if __name__ == "__main__":
     # episode_len = env_info["episode_limit"]
     timesteps = 800000
     learn_freq = 1
-    Num_Exploration = timesteps * 0.1
+    Num_Exploration = timesteps * 0.1 / 2
     Num_Training = timesteps - Num_Exploration
     ratio_total_reward = 0.1
 
