@@ -2,8 +2,14 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="0c3ab0f8-3009-47c1-8d00-211886854aab" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/RL_brain.py" beforeDir="false" afterPath="$PROJECT_DIR$/RL_brain.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/logs/agent_No_0/events.out.tfevents.1576048956.DESKTOP-U8S1D4S" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/logs/agent_No_1/events.out.tfevents.1576048956.DESKTOP-U8S1D4S" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/logs/agent_No_2/events.out.tfevents.1576048956.DESKTOP-U8S1D4S" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/logs/agent_No_3/events.out.tfevents.1576048957.DESKTOP-U8S1D4S" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/logs/agent_No_4/events.out.tfevents.1576048957.DESKTOP-U8S1D4S" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/logs/agent_No_5/events.out.tfevents.1576048958.DESKTOP-U8S1D4S" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/logs/agent_No_6/events.out.tfevents.1576048958.DESKTOP-U8S1D4S" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/logs/agent_No_7/events.out.tfevents.1576048959.DESKTOP-U8S1D4S" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/run_this.py" beforeDir="false" afterPath="$PROJECT_DIR$/run_this.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
@@ -166,7 +172,7 @@
       <workItem from="1575423748140" duration="25532000" />
       <workItem from="1575541206114" duration="10776000" />
       <workItem from="1575593849573" duration="48216000" />
-      <workItem from="1575966145243" duration="20294000" />
+      <workItem from="1575966145243" duration="20440000" />
     </task>
     <servers />
   </component>
