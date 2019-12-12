@@ -69,10 +69,11 @@ class DeepQNetwork:
 
         self.cost_his = []
         if(self.load_model):
-            model_load_steps = 30000
+            saver = tf.train.Saver(max_to_keep=100000000)
+            model_load_steps = 300000
             model_file_load = os.path.join("models/", "agent_No_" + str(self.agent_id) + "/",
                                            str(model_load_steps) + "_" + "model_segment_training/", "8m")
-            self.saver.restore(self.sess, model_file_load)
+            saver.restore(self.sess, model_file_load)
             print("model trained for %s steps of agent %s have been loaded"%(model_load_steps, self.agent_id))
         else:
             self.sess, self.saver, self.summary_placeholders, self.update_ops, self.summary_op, self.summary_writer, self.summary_vars = self.init_sess()
@@ -165,10 +166,13 @@ class DeepQNetwork:
     def choose_action(self, observation):
         # to have batch dimension when feed into tf placeholder
         observation = observation[np.newaxis, :]
-
-        if np.random.uniform() < self.epsilon:
-            # forward feed the observation and get q value for every actions
-            action = np.random.randint(0, self.n_actions)
+        if(self.load_model == False):
+            if np.random.uniform() < self.epsilon:
+                # forward feed the observation and get q value for every actions
+                action = np.random.randint(0, self.n_actions)
+            else:
+                actions_value = self.sess.run(self.q_eval, feed_dict={self.s: observation})
+                action = np.argmax(actions_value)
         else:
             actions_value = self.sess.run(self.q_eval, feed_dict={self.s: observation})
             action = np.argmax(actions_value)

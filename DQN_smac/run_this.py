@@ -1,12 +1,12 @@
 from smac.env import StarCraft2Env
 from RL_brain import DeepQNetwork
-import datetime
 import numpy as np
 import tensorflow as tf
 
-def run_this(RL_set, n_episode, Num_Exploration, learn_freq, n_agents, ratio_total_reward):
+def run_this(RL_set, n_episode, learn_freq, Num_Exploration, n_agents, ratio_total_reward):
     step = 0
     training_step = 0
+    n_actions_no_attack = 6
     for episode in range(n_episode):
         # initial observation
         env.reset()
@@ -15,14 +15,14 @@ def run_this(RL_set, n_episode, Num_Exploration, learn_freq, n_agents, ratio_tot
         observation_set = []
         reward_hl_own_old = []
         reward_hl_en_old = []
-        for agent_id in range(n_agents):
+        for agent_id in range(n_agents):                #第一个循环是为了得到初始状态/观察/生命值信息
             obs = env.get_obs_agent(agent_id)
             observation_set.append(obs)
-            reward_hl_own_old.append(obs[-1])
+            reward_hl_own_old.append(env.get_agent_health(agent_id))
             reward_hl_en_old.append(env.get_enemy_health(agent_id))
 
         while True:
-            # RL choose action based on observation
+            # RL choose action based on local observation
             action_set_actual = []
             action_set_execute = []
             dead_unit = []
@@ -41,7 +41,7 @@ def run_this(RL_set, n_episode, Num_Exploration, learn_freq, n_agents, ratio_tot
                 if (len(avail_actions_ind) == 1 and avail_actions_ind[0] == 0):   #判断该智能体是否已经死亡
                     dead_unit.append(agent_id)
 
-                    # RL take action and get next observation and reward
+            # RL take action and get next observation and reward
             reward_base, done, _ = env.step(action_set_execute)
             episode_reward_all += reward_base
             observation_set_next = []
@@ -51,17 +51,22 @@ def run_this(RL_set, n_episode, Num_Exploration, learn_freq, n_agents, ratio_tot
             for agent_id in range(n_agents):
                 obs_next = env.get_obs_agent(agent_id=agent_id)
                 observation_set_next.append(obs_next)
-                reward_hl_own_new.append(obs_next[-1])
+                reward_hl_own_new.append(env.get_agent_health(agent_id))
                 reward_hl_en_new.append(env.get_enemy_health(agent_id))
 
+
+            # obtain propre reward of every agent and stored it in transition
+            for agent_id in range(n_agents):
                 if (action_set_execute[agent_id] > 5):
-                    if(reward_base > 0):
-                        reward = reward_base + (reward_hl_en_old[agent_id] - reward_hl_en_new[agent_id]) - (
+                    target_id = action_set_execute[agent_id] - n_actions_no_attack
+                    attack_reward = (reward_hl_en_old[target_id] - reward_hl_en_new[target_id]) - ratio_total_reward * (
                                     reward_hl_own_old[agent_id] - reward_hl_own_new[agent_id])
+                    if(attack_reward > 0 and reward_base > 0):
+                        reward = reward_base + attack_reward
                     else:
-                        reward = (reward_hl_en_old[agent_id] - reward_hl_en_new[agent_id]) - (reward_hl_own_old[agent_id] - reward_hl_own_new[agent_id])
+                        reward = attack_reward
                 else:
-                    reward = ratio_total_reward * reward_base - (1 - ratio_total_reward) * (reward_hl_own_old[agent_id] - reward_hl_own_new[agent_id])
+                    reward = reward_hl_own_old[agent_id] - reward_hl_own_new[agent_id]
 
                 if(agent_id in dead_unit):
                     reward = 0
@@ -112,11 +117,11 @@ if __name__ == "__main__":
     n_episode = 4000
     n_agents = env_info["n_agents"]
     # episode_len = env_info["episode_limit"]
-    timesteps = 800000
     learn_freq = 1
+    timesteps = 800000
     Num_Exploration = timesteps * 0.1
     Num_Training = timesteps - Num_Exploration
-    ratio_total_reward = 0.1
+    ratio_total_reward = 0.2
 
     RL_set = []
     graph_set = []
@@ -145,4 +150,4 @@ if __name__ == "__main__":
                 RL_set.append(RL)
 
     # run_this写成一个所有智能体执行的函数
-    run_this(RL_set, n_episode, Num_Exploration, learn_freq, n_agents, ratio_total_reward)
+    run_this(RL_set, n_episode, learn_freq, Num_Exploration, n_agents, ratio_total_reward)
