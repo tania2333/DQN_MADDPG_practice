@@ -59,14 +59,16 @@ def run_this(RL_set, n_episode, learn_freq, Num_Exploration, n_agents, ratio_tot
             for agent_id in range(n_agents):
                 if (action_set_execute[agent_id] > 5):
                     target_id = action_set_execute[agent_id] - n_actions_no_attack
-                    attack_reward = (reward_hl_en_old[target_id] - reward_hl_en_new[target_id]) - ratio_total_reward * (
-                                    reward_hl_own_old[agent_id] - reward_hl_own_new[agent_id])
-                    if(attack_reward > 0 and reward_base > 0):
-                        reward = reward_base + attack_reward
+                    health_reduce_en = reward_hl_en_old[target_id] - reward_hl_en_new[target_id]
+                    if(health_reduce_en > 0):
+                        if(reward_base > 0):
+                            reward = 2 + reward_base
+                        else:
+                            reward = 2
                     else:
-                        reward = attack_reward
+                        reward = 1
                 else:
-                    reward = reward_hl_own_old[agent_id] - reward_hl_own_new[agent_id]
+                    reward = (reward_hl_own_new[agent_id] - reward_hl_own_old[agent_id]) * 5
 
                 if(agent_id in dead_unit):
                     reward = 0
