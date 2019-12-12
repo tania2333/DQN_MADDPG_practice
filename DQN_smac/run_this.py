@@ -133,7 +133,7 @@ if __name__ == "__main__":
                                   sess=sess,
                                   agent_id=i,
                                   num_training=Num_Training,
-                                  learning_rate=0.002,
+                                  learning_rate=0.00025,   #0.002
                                   reward_decay=0.99,
                                   replace_target_iter=5000,
                                   memory_size=80000,

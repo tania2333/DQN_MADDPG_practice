@@ -98,7 +98,7 @@ class DeepQNetwork:
         with tf.variable_scope('eval_net'):
             # c_names(collections_names) are the collections to store variables                                512*512的网络结构
             c_names, n_l1, n_l2, w_initializer, b_initializer = \
-                ['eval_net_params', tf.GraphKeys.GLOBAL_VARIABLES], 512, 512, \
+                ['eval_net_params', tf.GraphKeys.GLOBAL_VARIABLES], 256, 256, \
                 tf.contrib.layers.xavier_initializer(), tf.contrib.layers.xavier_initializer()
                 # tf.random_normal_initializer(0., 0.3), tf.constant_initializer(0.1)  # config of layers
 
@@ -124,8 +124,8 @@ class DeepQNetwork:
             self.loss = tf.reduce_mean(tf.squared_difference(self.q_target, self.q_eval))
 
         with tf.variable_scope('train'):
-            self._train_op = tf.train.RMSPropOptimizer(self.lr).minimize(self.loss)
-
+            # self._train_op = tf.train.RMSPropOptimizer(self.lr).minimize(self.loss)
+            self._train_op = tf.train.AdamOptimizer(self.lr, epsilon=1e-02).minimize(self.loss)
         # ------------------ build target_net ------------------
         self.s_ = tf.placeholder(tf.float32, [None, self.n_features], name='s_')    # input
         with tf.variable_scope('target_net'):
