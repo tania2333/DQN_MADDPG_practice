@@ -57,7 +57,12 @@ def run_this(RL_set, n_episode, learn_freq, Num_Exploration, n_agents, ratio_tot
 
             # obtain propre reward of every agent and stored it in transition
             for agent_id in range(n_agents):
-                if (action_set_execute[agent_id] > 5):
+                if (agent_id in dead_unit):
+                    reward = 0
+                elif(action_set_execute[agent_id] != action_set_actual[agent_id]):  #当输出动作无法执行时，执行替代动作，但是把输出动作进行保存并且给与一个负的奖励
+                    reward = -2
+
+                elif(action_set_execute[agent_id] > 5):
                     target_id = action_set_execute[agent_id] - n_actions_no_attack
                     health_reduce_en = reward_hl_en_old[target_id] - reward_hl_en_new[target_id]
                     if(health_reduce_en > 0):
@@ -70,13 +75,9 @@ def run_this(RL_set, n_episode, learn_freq, Num_Exploration, n_agents, ratio_tot
                 else:
                     reward = (reward_hl_own_new[agent_id] - reward_hl_own_old[agent_id]) * 5
 
-                if(agent_id in dead_unit):
-                    reward = 0
-
                 episode_reward_agent[agent_id] += reward
 
-                if(action_set_execute[agent_id] == action_set_actual[agent_id]):     #只有当计算出的动作与所采取的动作一样的时候，才保存下来该transition
-                    RL_set[agent_id].store_transition(observation_set[agent_id], action_set_actual[agent_id], reward, observation_set_next[agent_id])
+                RL_set[agent_id].store_transition(observation_set[agent_id], action_set_actual[agent_id], reward, observation_set_next[agent_id])
 
             # swap observation
             observation_set = observation_set_next
@@ -116,11 +117,11 @@ if __name__ == "__main__":
 
     vector_obs_len = 179  # local observation 80
     n_actions = env_info["n_actions"]
-    n_episode = 4000
+    n_episode = 1500   #每个episode大概能跑200步
     n_agents = env_info["n_agents"]
     # episode_len = env_info["episode_limit"]
     learn_freq = 1
-    timesteps = 800000
+    timesteps = 300000
     Num_Exploration = int(timesteps * 0.1)
     Num_Training = timesteps - Num_Exploration
     ratio_total_reward = 0.2

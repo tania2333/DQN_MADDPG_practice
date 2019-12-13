@@ -41,7 +41,7 @@
   <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
   <component name="PropertiesComponent">
     <property name="WebServerToolWindowFactoryState" value="false" />
-    <property name="last_opened_file_path" value="$USER_HOME$/DRL_FRAMEWORK" />
+    <property name="last_opened_file_path" value="$USER_HOME$/Anaconda3/envs/python35/Lib/site-packages/smac" />
     <property name="settings.editor.selected.configurable" value="PyScientificConfigurable" />
   </component>
   <component name="RunDashboard">
@@ -56,7 +56,7 @@
       </list>
     </option>
   </component>
-  <component name="RunManager" selected="Python.test">
+  <component name="RunManager" selected="Python.test_2nd_actionOutputForbidden">
     <configuration name="RL_brain" type="PythonConfigurationType" factoryName="Python" temporary="true">
       <module name="DQN_smac" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -101,6 +101,28 @@
       <option name="INPUT_FILE" value="" />
       <method v="2" />
     </configuration>
+    <configuration name="run_this_2nd_actionOutputForbidden" type="PythonConfigurationType" factoryName="Python" temporary="true">
+      <module name="DQN_smac" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/run_this_2nd_actionOutputForbidden.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
     <configuration name="test" type="PythonConfigurationType" factoryName="Python" temporary="true">
       <module name="DQN_smac" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -123,7 +145,7 @@
       <option name="INPUT_FILE" value="" />
       <method v="2" />
     </configuration>
-    <configuration name="test_example" type="PythonConfigurationType" factoryName="Python" temporary="true">
+    <configuration name="test_2nd_actionOutputForbidden" type="PythonConfigurationType" factoryName="Python" temporary="true">
       <module name="DQN_smac" />
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
@@ -136,7 +158,7 @@
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/test_example.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/test_2nd_actionOutputForbidden.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
@@ -147,10 +169,11 @@
     </configuration>
     <recent_temporary>
       <list>
+        <item itemvalue="Python.test_2nd_actionOutputForbidden" />
+        <item itemvalue="Python.run_this_2nd_actionOutputForbidden" />
         <item itemvalue="Python.test" />
         <item itemvalue="Python.run_this" />
         <item itemvalue="Python.RL_brain" />
-        <item itemvalue="Python.test_example" />
       </list>
     </recent_temporary>
   </component>
@@ -167,7 +190,8 @@
       <workItem from="1575423748140" duration="25532000" />
       <workItem from="1575541206114" duration="10776000" />
       <workItem from="1575593849573" duration="48216000" />
-      <workItem from="1575966145243" duration="47813000" />
+      <workItem from="1575966145243" duration="48512000" />
+      <workItem from="1576200587756" duration="9330000" />
     </task>
     <servers />
   </component>
@@ -201,9 +225,11 @@
     </watches-manager>
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
+    <SUITE FILE_PATH="coverage/DQN_smac$test_2nd_actionOutputForbidden.coverage" NAME="test_2nd_actionOutputForbidden Coverage Results" MODIFIED="1576236224944" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/DQN_smac$RL_brain.coverage" NAME="RL_brain Coverage Results" MODIFIED="1576115378879" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/DQN_smac$run_this_2nd_actionOutputForbidden.coverage" NAME="run_this_2nd_actionOutputForbidden Coverage Results" MODIFIED="1576202729715" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/DQN_smac$test_example.coverage" NAME="test_example Coverage Results" MODIFIED="1575792201313" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/DQN_smac$run_this.coverage" NAME="run_this Coverage Results" MODIFIED="1576144334247" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
-    <SUITE FILE_PATH="coverage/DQN_smac$test.coverage" NAME="test Coverage Results" MODIFIED="1576156370374" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/DQN_smac$test.coverage" NAME="test Coverage Results" MODIFIED="1576201107708" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
   </component>
 </project>

@@ -81,7 +81,7 @@ def run_this(RL_set, n_episode, learn_freq, Num_Exploration, n_agents, ratio_tot
 
             # break while loop when end of this episode
             if done:
-                print("steps until now : %s, episode: %s" % (step, episode))
+                print("steps until now : %s, episode: %s， episode reward: %s" % (step, episode, episode_reward_all))
                 break
 
             step += 1

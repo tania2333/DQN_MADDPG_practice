@@ -70,7 +70,7 @@ class DeepQNetwork:
         self.cost_his = []
         if(self.load_model):
             saver = tf.train.Saver(max_to_keep=100000000)
-            model_load_steps = 10000
+            model_load_steps = 250000
             model_file_load = os.path.join("models/", "agent_No_" + str(self.agent_id) + "/",
                                            str(model_load_steps) + "_" + "model_segment_training/", "8m")
             saver.restore(self.sess, model_file_load)
