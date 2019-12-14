@@ -117,11 +117,11 @@ if __name__ == "__main__":
 
     vector_obs_len = 179  # local observation 80
     n_actions = env_info["n_actions"]
-    n_episode = 1500   #每个episode大概能跑200步
+    n_episode = 2500   #每个episode大概能跑200步
     n_agents = env_info["n_agents"]
     # episode_len = env_info["episode_limit"]
     learn_freq = 1
-    timesteps = 300000
+    timesteps = 500000
     Num_Exploration = int(timesteps * 0.1)
     Num_Training = timesteps - Num_Exploration
     ratio_total_reward = 0.2
@@ -146,7 +146,7 @@ if __name__ == "__main__":
                                   replace_target_iter=5000,
                                   memory_size=Num_Exploration,
                                   batch_size=32,
-                                  save_model_freq=10000,
+                                  save_model_freq=20000,
                                   load_model=False,
                                   )
 
