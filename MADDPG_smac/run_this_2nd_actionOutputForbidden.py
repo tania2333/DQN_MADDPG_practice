@@ -32,7 +32,7 @@ class OU_noise(object):
 		return np.clip(action + state, self.action_low, self.action_high)
 
 
-def run_this(RL_set, n_episode, learn_freq, Num_Exploration, Num_Training, n_agents, n_actions):
+def run_this(RL_set, n_episode, learn_freq, Num_Exploration, Num_Training, n_agents, n_actions, vector_obs_len):
     step = 0
     training_step = 0
     n_actions_no_attack = 6
@@ -52,7 +52,7 @@ def run_this(RL_set, n_episode, learn_freq, Num_Exploration, Num_Training, n_age
         reward_hl_en_old = []
         for agent_id in range(n_agents):                #第一个循环是为了得到初始状态/观察/生命值信息
             obs = env.get_obs_agent(agent_id)
-            obs = obs.reshape((1, 179))
+            obs = obs.reshape((1, vector_obs_len))
             observation_set.append(obs)
             reward_hl_own_old.append(env.get_agent_health(agent_id))
             reward_hl_en_old.append(env.get_enemy_health(agent_id))
@@ -61,9 +61,11 @@ def run_this(RL_set, n_episode, learn_freq, Num_Exploration, Num_Training, n_age
             # RL choose action based on local observation
             action_set_actual = []
             action_set_execute = []
+            action_output_set = []
             dead_unit = []
             for agent_id in range(n_agents):
                 action_output = noise.add_noise(RL_set[agent_id].action(observation_set[agent_id]), training_step)
+                action_output_set.append(action_output)
                 action_norm = (action_output + 1) / 2
                 action_sum = action_norm.sum()
                 action_prob = action_norm / action_sum
@@ -90,12 +92,12 @@ def run_this(RL_set, n_episode, learn_freq, Num_Exploration, Num_Training, n_age
 
             for agent_id in range(n_agents):
                 obs_next = env.get_obs_agent(agent_id=agent_id)
-                obs_next = obs_next.reshape((1, 179))
+                obs_next = obs_next.reshape((1, vector_obs_len))
                 observation_set_next.append(obs_next)
                 reward_hl_own_new.append(env.get_agent_health(agent_id))
                 reward_hl_en_new.append(env.get_enemy_health(agent_id))
 
-
+            reward_set = []
             # obtain propre reward of every agent and stored it in transition
             for agent_id in range(n_agents):
                 if (agent_id in dead_unit):
@@ -117,8 +119,10 @@ def run_this(RL_set, n_episode, learn_freq, Num_Exploration, Num_Training, n_age
                     reward = (reward_hl_own_new[agent_id] - reward_hl_own_old[agent_id]) * 5
 
                 episode_reward_agent[agent_id] += reward
+                reward_set.append(reward)
 
-                RL_set[agent_id].store_transition(observation_set, action_set_actual, reward, observation_set_next, done)
+            for agent_id in range(n_agents):
+                RL_set[agent_id].store_transition(observation_set, action_output_set, reward_set[agent_id], observation_set_next, done)  #action_set_actual
 
             # swap observation
             observation_set = observation_set_next
@@ -158,19 +162,16 @@ if __name__ == "__main__":
 
     vector_obs_len = 179  # local observation 80
     n_actions = env_info["n_actions"]
-    n_episode = 2500   #每个episode大概能跑200步
+    n_episode = 4000   #每个episode大概能跑200步
     n_agents = env_info["n_agents"]
     # episode_len = env_info["episode_limit"]
     learn_freq = 1
-    timesteps = 500000
-    Num_Exploration = int(timesteps * 0.1 / 2)
+    timesteps = 800000
+    Num_Exploration = int(timesteps * 0.1)
     Num_Training = timesteps - Num_Exploration
-    noise_rate = 0
 
     agent_set = []
-    agent_target_set = []
-    graph_set = []
-    sess_set = []
+
     for i in range(n_agents):
         g = tf.Graph()
         sess = tf.Session(graph=g)
@@ -195,4 +196,4 @@ if __name__ == "__main__":
                     )
                 agent_set.append(agent)
     # run_this写成一个所有智能体执行的函数
-    run_this(agent_set, n_episode, learn_freq, Num_Exploration, Num_Training, n_agents, n_actions)
+    run_this(agent_set, n_episode, learn_freq, Num_Exploration, Num_Training, n_agents, n_actions, vector_obs_len)

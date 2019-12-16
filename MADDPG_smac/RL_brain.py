@@ -13,8 +13,6 @@ gym: 0.7.3
 import numpy as np
 import tensorflow as tf
 import os
-import pickle
-import tensorflow.contrib as tc
 from replay_buffer import ReplayBuffer
 np.random.seed(1)
 tf.set_random_seed(1)
@@ -76,92 +74,107 @@ class MADDPG:
 
 
         first_fc_actor = [n_features, 256]
-        first_fc_critic = [n_features + n_actions, 256]
+        first_fc_critic = [n_features + n_actions*n_agents, 256]
         second_fc = [256, 128]
         third_fc_actor = [128, n_actions]
         third_fc_critic = [128, 1]
 
-        def weight_variable(name, shape):
-            return tf.get_variable(name, shape=shape, initializer=tf.contrib.layers.xavier_initializer())
+        def weight_variable(name, shape, c_names):
+            return tf.get_variable(name, shape=shape, initializer=tf.contrib.layers.xavier_initializer(), collections=c_names)
 
-        def bias_variable(name, shape):
-            return tf.get_variable(name, shape=shape, initializer=tf.contrib.layers.xavier_initializer())
+        def bias_variable(name, shape, c_names):
+            return tf.get_variable(name, shape=shape, initializer=tf.contrib.layers.xavier_initializer(), collections=c_names)
 
         def actor_network(name):
             # Actor Network
+            c_names = ['actor_params', tf.GraphKeys.GLOBAL_VARIABLES]
             with tf.variable_scope(name):
-                w_fc1_actor = weight_variable('_w_fc1', first_fc_actor)
-                b_fc1_actor = bias_variable('_b_fc1', [first_fc_actor[1]])
+                x = state_input
+                with tf.variable_scope('l1'):
+                    w_fc1_actor = weight_variable('_w_fc1', first_fc_actor, c_names)
+                    b_fc1_actor = bias_variable('_b_fc1', [first_fc_actor[1]], c_names)
+                    h_fc1_actor = tf.nn.relu(tf.matmul(x, w_fc1_actor) + b_fc1_actor)
 
-                w_fc2_actor = weight_variable('_w_fc2', second_fc)
-                b_fc2_actor = bias_variable('_b_fc2', [second_fc[1]])
+                with tf.variable_scope('l2'):
+                    w_fc2_actor = weight_variable('_w_fc2', second_fc, c_names)
+                    b_fc2_actor = bias_variable('_b_fc2', [second_fc[1]], c_names)
+                    h_fc2_actor = tf.nn.relu(tf.matmul(h_fc1_actor, w_fc2_actor) + b_fc2_actor)
 
-                w_fc3_actor = weight_variable('_w_fc3', third_fc_actor)
-                b_fc3_actor = bias_variable('_b_fc3', [third_fc_actor[1]])
-
-            x = state_input
-            h_fc1_actor = tf.nn.relu(tf.matmul(x, w_fc1_actor) + b_fc1_actor)
-            h_fc2_actor = tf.nn.relu(tf.matmul(h_fc1_actor, w_fc2_actor) + b_fc2_actor)
-
-            output_actor = tf.nn.tanh(tf.matmul(h_fc2_actor, w_fc3_actor) + b_fc3_actor)
+                with tf.variable_scope('l3'):
+                    w_fc3_actor = weight_variable('_w_fc3', third_fc_actor, c_names)
+                    b_fc3_actor = bias_variable('_b_fc3', [third_fc_actor[1]], c_names)
+                    output_actor = tf.nn.tanh(tf.matmul(h_fc2_actor, w_fc3_actor) + b_fc3_actor)
             return output_actor
 
         def actor_target_network(name):
             # Actor Network
+            c_names = ['actor_target_params', tf.GraphKeys.GLOBAL_VARIABLES]
             with tf.variable_scope(name):
-                w_fc1_actor = weight_variable('_w_fc1', first_fc_actor)
-                b_fc1_actor = bias_variable('_b_fc1', [first_fc_actor[1]])
+                x = state_input_next
+                with tf.variable_scope('l1'):
+                    w_fc1_actor = weight_variable('_w_fc1', first_fc_actor, c_names)
+                    b_fc1_actor = bias_variable('_b_fc1', [first_fc_actor[1]], c_names)
+                    h_fc1_actor = tf.nn.relu(tf.matmul(x, w_fc1_actor) + b_fc1_actor)
 
-                w_fc2_actor = weight_variable('_w_fc2', second_fc)
-                b_fc2_actor = bias_variable('_b_fc2', [second_fc[1]])
+                with tf.variable_scope('l2'):
+                    w_fc2_actor = weight_variable('_w_fc2', second_fc, c_names)
+                    b_fc2_actor = bias_variable('_b_fc2', [second_fc[1]],c_names)
+                    h_fc2_actor = tf.nn.relu(tf.matmul(h_fc1_actor, w_fc2_actor) + b_fc2_actor)
 
-                w_fc3_actor = weight_variable('_w_fc3', third_fc_actor)
-                b_fc3_actor = bias_variable('_b_fc3', [third_fc_actor[1]])
+                with tf.variable_scope('l3'):
+                    w_fc3_actor = weight_variable('_w_fc3', third_fc_actor, c_names)
+                    b_fc3_actor = bias_variable('_b_fc3', [third_fc_actor[1]], c_names)
+                    output_actor = tf.nn.tanh(tf.matmul(h_fc2_actor, w_fc3_actor) + b_fc3_actor)
 
-            x = state_input_next
-            h_fc1_actor = tf.nn.relu(tf.matmul(x, w_fc1_actor) + b_fc1_actor)
-            h_fc2_actor = tf.nn.relu(tf.matmul(h_fc1_actor, w_fc2_actor) + b_fc2_actor)
-
-            output_actor = tf.nn.tanh(tf.matmul(h_fc2_actor, w_fc3_actor) + b_fc3_actor)
             return output_actor
 
 
-        def critic_network(name, action_input):
-            with tf.variable_scope(name):
-                w_fc1_critic = weight_variable('_w_fc1', first_fc_critic)
-                b_fc1_critic = bias_variable('_b_fc1', [first_fc_critic[1]])
+        def critic_network(name, action_input, reuse=False):
+            c_names = ['critic_params', tf.GraphKeys.GLOBAL_VARIABLES]
+            with tf.variable_scope(name) as scope:
+                if reuse:
+                    scope.reuse_variables()
+                x = tf.concat([state_input, action_input], axis=-1)
 
-                w_fc2_critic = weight_variable('_w_fc2', second_fc)
-                b_fc2_critic = bias_variable('_b_fc2', [second_fc[1]])
+                with tf.variable_scope('l1'):
+                    w_fc1_critic = weight_variable('_w_fc1', first_fc_critic, c_names)
+                    b_fc1_critic = bias_variable('_b_fc1', [first_fc_critic[1]], c_names)
+                    h_fc1_critic = tf.nn.relu(tf.matmul(x, w_fc1_critic) + b_fc1_critic)
 
-                w_fc3_critic = weight_variable('_w_fc3', third_fc_critic)
-                b_fc3_critic = bias_variable('_b_fc3', [third_fc_critic[1]])
+                with tf.variable_scope('l2'):
+                    w_fc2_critic = weight_variable('_w_fc2', second_fc, c_names)
+                    b_fc2_critic = bias_variable('_b_fc2', [second_fc[1]], c_names)
+                    h_fc2_critic = tf.nn.relu(tf.matmul(h_fc1_critic, w_fc2_critic) + b_fc2_critic)
 
-            x = tf.concat([state_input, action_input], axis=-1)
-            # Critic Network
-            h_fc1_critic = tf.nn.relu(tf.matmul(x, w_fc1_critic) + b_fc1_critic)
-            h_fc2_critic = tf.nn.relu(tf.matmul(h_fc1_critic, w_fc2_critic) + b_fc2_critic)
+                with tf.variable_scope('l3'):
+                    w_fc3_critic = weight_variable('_w_fc3', third_fc_critic, c_names)
+                    b_fc3_critic = bias_variable('_b_fc3', [third_fc_critic[1]], c_names)
+                    output_critic = tf.matmul(h_fc2_critic, w_fc3_critic) + b_fc3_critic
 
-            output_critic = tf.matmul(h_fc2_critic, w_fc3_critic) + b_fc3_critic
             return output_critic
 
-        def critic_target_network(name, action_input_next):
-            with tf.variable_scope(name):
-                w_fc1_critic = weight_variable('_w_fc1', first_fc_critic)
-                b_fc1_critic = bias_variable('_b_fc1', [first_fc_critic[1]])
+        def critic_target_network(name, action_input_next, reuse=False):
+            c_names = ['critic_target_params', tf.GraphKeys.GLOBAL_VARIABLES]
+            with tf.variable_scope(name) as scope:
+                if reuse:
+                    scope.reuse_variables()
+                x = tf.concat([state_input_next, action_input_next], axis=-1)
 
-                w_fc2_critic = weight_variable('_w_fc2', second_fc)
-                b_fc2_critic = bias_variable('_b_fc2', [second_fc[1]])
+                with tf.variable_scope('l1'):
+                    w_fc1_critic = weight_variable('_w_fc1', first_fc_critic, c_names)
+                    b_fc1_critic = bias_variable('_b_fc1', [first_fc_critic[1]], c_names)
+                    h_fc1_critic = tf.nn.relu(tf.matmul(x, w_fc1_critic) + b_fc1_critic)
 
-                w_fc3_critic = weight_variable('_w_fc3', third_fc_critic)
-                b_fc3_critic = bias_variable('_b_fc3', [third_fc_critic[1]])
+                with tf.variable_scope('l2'):
+                    w_fc2_critic = weight_variable('_w_fc2', second_fc, c_names)
+                    b_fc2_critic = bias_variable('_b_fc2', [second_fc[1]], c_names)
+                    h_fc2_critic = tf.nn.relu(tf.matmul(h_fc1_critic, w_fc2_critic) + b_fc2_critic)
 
-            x = tf.concat([state_input_next, action_input_next], axis=-1)
-            # Critic Network
-            h_fc1_critic = tf.nn.relu(tf.matmul(x, w_fc1_critic) + b_fc1_critic)
-            h_fc2_critic = tf.nn.relu(tf.matmul(h_fc1_critic, w_fc2_critic) + b_fc2_critic)
+                with tf.variable_scope('l3'):
+                    w_fc3_critic = weight_variable('_w_fc3', third_fc_critic, c_names)
+                    b_fc3_critic = bias_variable('_b_fc3', [third_fc_critic[1]], c_names)
+                    output_critic = tf.matmul(h_fc2_critic, w_fc3_critic) + b_fc3_critic
 
-            output_critic = tf.matmul(h_fc2_critic, w_fc3_critic) + b_fc3_critic
             return output_critic
 
 
@@ -186,7 +199,7 @@ class MADDPG:
 
         # 最大化Q值
         self.actor_loss = -tf.reduce_mean(  # error2: actor_loss没有考虑动作对策略网络参数的导数,但可以理解为Q值的最大化
-            critic_network('agent_critic', action_input=tf.concat([self.action_output, other_action_input], axis=1)))
+            critic_network('agent_critic', action_input=tf.concat([self.action_output, other_action_input], axis=1), reuse=True))
         self.actor_train = self.actor_optimizer.minimize(self.actor_loss)
 
         self.target_Q = tf.placeholder(shape=[None, 1], dtype=tf.float32)
@@ -201,14 +214,13 @@ class MADDPG:
             saver.restore(self.sess, model_file_load)
             print("model trained for %s steps of agent %s have been loaded" % (model_load_steps, self.agent_id))
         else:
-            self.sess, self.saver, self.summary_placeholders, self.update_ops, self.summary_op, self.summary_writer, self.summary_vars, self.actor_target_init, self.actor_target_update, \
-            self.critic_target_init, self.critic_target_update = self.init_sess()
+            self.sess, self.saver, self.summary_placeholders, self.update_ops, self.summary_op, self.summary_writer, self.summary_vars, self.actor_target_update, self.critic_target_update = self.init_sess()
 
     def train_actor(self, state, other_action):
-        _, self.actor_cost = self.sess.run(self.actor_train,self.actor_loss, {self.state_input: state, self.other_action_input: other_action})
+        _, self.actor_cost = self.sess.run([self.actor_train,self.actor_loss], {self.state_input: state, self.other_action_input: other_action})
 
     def train_critic(self, state, action, other_action, target):
-        _, self.critic_cost = self.sess.run(self.critic_train,self.critic_loss,
+        _, self.critic_cost = self.sess.run([self.critic_train,self.critic_loss],
                  {self.state_input: state, self.action_input: action, self.other_action_input: other_action,
                   self.target_Q: target})
 
@@ -232,16 +244,15 @@ class MADDPG:
         fileWritePath = os.path.join("logs/", "agent_No_" + str(self.agent_id) + "/")
         summary_writer = tf.summary.FileWriter(fileWritePath, self.sess.graph)
         self.sess.run(tf.global_variables_initializer())
-        actor_target_init, actor_target_update = self.create_init_update('agent_actor', 'agent_target_actor')
-        critic_target_init, critic_target_update = self.create_init_update('agent_critic','agent_target_critic')
-        self.sess.run([actor_target_init, critic_target_init])
+        actor_target_update = self.create_init_update('agent_actor', 'agent_target_actor')
+        critic_target_update = self.create_init_update('agent_critic','agent_target_critic')
+        # self.sess.run([actor_target_init, critic_target_init])
 
         # Load the file if the saved file exists
 
         saver = tf.train.Saver(max_to_keep=100000000)
 
-        return self.sess, saver, summary_placeholders, update_ops, summary_op, summary_writer, summary_vars, actor_target_init, actor_target_update, \
-               critic_target_init, critic_target_update
+        return self.sess, saver, summary_placeholders, update_ops, summary_op, summary_writer, summary_vars, actor_target_update, critic_target_update
 
     def store_transition(self, s_set, a_set, r, s_next_set, done):
         s_list = []
@@ -270,7 +281,7 @@ class MADDPG:
         if self.learn_step_counter % self.replace_target_iter == 0:
             self.sess.run([self.actor_target_update, self.critic_target_update])
 
-        total_obs_batch, total_act_batch, rew_batch, total_next_obs_batch, done_mask = self.memory.sample(32)  # batch_size默认为32
+        total_obs_batch, total_act_batch, rew_batch, total_next_obs_batch, done_mask = self.memory.sample(self.batch_size)  # batch_size默认为32
 
         act_batch = total_act_batch[:, 0, :]  # 0 代表当前智能体的动作
 
@@ -308,14 +319,23 @@ class MADDPG:
 
         self.plotting()
 
+        if (self.learn_step_counter % self.save_model_freq == 0):
+            model_file_save = os.path.join("models/", "agent_No_"+str(self.agent_id)+"/", str(self.learn_step_counter) + "_" + "model_segment_training/", "8m")
+            dirname = os.path.dirname(model_file_save)
+            if any(dirname):
+                os.makedirs(dirname, exist_ok=True)
+            self.saver.save(self.sess, model_file_save)
+            print("Model trained for %s times is saved"%self.learn_step_counter)
+
+        self.memory.save(self.agent_id)
+
     def create_init_update(self, oneline_name, target_name, tau=0.99):
         online_var = [i for i in tf.trainable_variables() if oneline_name in i.name]
         target_var = [i for i in tf.trainable_variables() if target_name in i.name]
 
-        target_init = [tf.assign(target, online) for online, target in zip(online_var, target_var)]
         target_update = [tf.assign(target, (1 - tau) * online + tau * target) for online, target in zip(online_var, target_var)]
 
-        return target_init, target_update
+        return target_update
 
     def setup_summary(self):
         actor_cost = tf.Variable(0.)

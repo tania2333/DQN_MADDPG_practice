@@ -3,6 +3,8 @@
   <component name="ChangeListManager">
     <list default="true" id="0c3ab0f8-3009-47c1-8d00-211886854aab" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../MADDPG_smac/RL_brain.py" beforeDir="false" afterPath="$PROJECT_DIR$/../MADDPG_smac/RL_brain.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../MADDPG_smac/run_this_2nd_actionOutputForbidden.py" beforeDir="false" afterPath="$PROJECT_DIR$/../MADDPG_smac/run_this_2nd_actionOutputForbidden.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../maddpg_practice/.idea/workspace.xml" beforeDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
@@ -191,7 +193,7 @@
       <workItem from="1575593849573" duration="48216000" />
       <workItem from="1575966145243" duration="48512000" />
       <workItem from="1576200587756" duration="21082000" />
-      <workItem from="1576394345339" duration="325000" />
+      <workItem from="1576394345339" duration="4833000" />
     </task>
     <servers />
   </component>

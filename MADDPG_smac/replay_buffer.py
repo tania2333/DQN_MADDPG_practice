@@ -1,5 +1,6 @@
 import numpy as np
 import random
+import pickle
 
 from segment_tree import SumSegmentTree, MinSegmentTree
 
@@ -67,6 +68,13 @@ class ReplayBuffer(object):
         idxes = [random.randint(0, len(self._storage) - 1) for _ in range(batch_size)]
         return self._encode_sample(idxes)
 
+    def save(self, agent_id):
+        # save data of replay buffer
+        obj = self._storage
+        filename = 'buffer_agent' + str(agent_id) + '.txt'
+        file = open(filename, 'wb')
+        pickle.dump(obj, file)
+        file.close()
 
 class PrioritizedReplayBuffer(ReplayBuffer):
     def __init__(self, size, alpha):
