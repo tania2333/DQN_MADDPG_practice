@@ -200,13 +200,13 @@ if __name__ == "__main__":
     vector_obs_len = 179  # local observation 80
     n_features = vector_obs_len
     n_actions = env_info["n_actions"]
-    n_episode = 4000   #每个episode大概能跑200步
+    n_episode = 2000   #每个episode大概能跑200步
     n_agents = env_info["n_agents"]
     # episode_len = env_info["episode_limit"]
     learn_freq = 1
-    timesteps = 800000
-    Num_Exploration = int(timesteps * 0.1 / 16)         # 随着试验次数随时更改
-    save_model_freq = 1000                              # 随着试验次数随时更改
+    timesteps = 400000
+    Num_Exploration = int(timesteps * 0.1)         # 随着试验次数随时更改
+    save_model_freq = 20000                              # 随着试验次数随时更改
     Num_Training = timesteps - Num_Exploration
     learning_rate_actor = 1e-4
     learning_rate_critic = 1e-3

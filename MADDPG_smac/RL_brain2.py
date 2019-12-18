@@ -32,7 +32,7 @@ class ActorNetwork(object):
                                                       tf.multiply(self.target_network_params[i], 1. - self.tau))
                  for i in range(len(self.target_network_params))]
 
-        self.action_gradient = tf.placeholder(tf.float32, (None, self.n_actions), name="action_gradient")  # print('action_grad',self.action_gradient) 2,n,2,1 /3,?,3,1
+        self.action_gradient = tf.placeholder(tf.float16, (None, self.n_actions), name="action_gradient")  # print('action_grad',self.action_gradient) 2,n,2,1 /3,?,3,1
 
         with tf.name_scope("actor_gradients"):
             grads = []
@@ -50,7 +50,7 @@ class ActorNetwork(object):
         self.saver = tf.train.Saver(max_to_keep=100000000)
 
     def create_actor_network(self, name):
-        inputs = tf.placeholder(tf.float32, shape=(None, self.n_features), name="actor_inputs")
+        inputs = tf.placeholder(tf.float16, shape=(None, self.n_features), name="actor_inputs")
         out = MADDPG.actor_build_network(name, inputs, self.n_features, self.n_actions)  # (, 2,1)
         return inputs, out
 
@@ -145,7 +145,7 @@ class CriticNetwork(object):
                                                       + tf.multiply(self.target_network_params[i], 1. - self.tau))
                  for i in range(len(self.target_network_params))]
 
-        self.predicted_q_value = tf.placeholder(tf.float32, (None, self.output_len), name="predicted_q_value")
+        self.predicted_q_value = tf.placeholder(tf.float16, (None, self.output_len), name="predicted_q_value")
         # self.own_action = tf.placeholder(tf.float32, (None, self.n_actions), name="current_agent_action")
 
 
@@ -160,9 +160,9 @@ class CriticNetwork(object):
         self.saver = tf.train.Saver(max_to_keep=100000000)
 
     def create_critic_network(self, name):
-        inputs = tf.placeholder(tf.float32, shape=(None, self.n_features), name="critic_inputs")
-        own_action = tf.placeholder(tf.float32, shape=(None, self.n_actions), name="critic_action")
-        other_action = tf.placeholder(tf.float32, shape=(None, self.n_actions * (self.num_agents-1)), name="critic_other_action")
+        inputs = tf.placeholder(tf.float16, shape=(None, self.n_features), name="critic_inputs")
+        own_action = tf.placeholder(tf.float16, shape=(None, self.n_actions), name="critic_action")
+        other_action = tf.placeholder(tf.float16, shape=(None, self.n_actions * (self.num_agents-1)), name="critic_other_action")
 
         out = MADDPG.critic_build_network(name, inputs, self.n_features, self.num_agents, self.n_actions, own_action, other_action)
         return inputs, own_action, other_action, out
@@ -216,7 +216,7 @@ class CriticNetwork(object):
         tf.summary.scalar("eps_rew_all", eps_rew_all)
         summary_vars = [critic_cost, eps_rew_agent, eps_rew_all]
 
-        summary_placeholders = [tf.placeholder(tf.float32) for _ in range(len(summary_vars))]
+        summary_placeholders = [tf.placeholder(tf.float16) for _ in range(len(summary_vars))]
 
         update_ops = [summary_vars[i].assign(summary_placeholders[i]) for i in range(len(summary_vars))]
         summary_op = tf.summary.merge_all()
