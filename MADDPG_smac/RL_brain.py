@@ -327,7 +327,7 @@ class MADDPG:
             self.saver.save(self.sess, model_file_save)
             print("Model trained for %s times is saved"%self.learn_step_counter)
 
-        self.memory.save(self.agent_id)
+            # self.memory.save(self.agent_id)
 
     def create_init_update(self, oneline_name, target_name, tau=0.99):
         online_var = [i for i in tf.trainable_variables() if oneline_name in i.name]

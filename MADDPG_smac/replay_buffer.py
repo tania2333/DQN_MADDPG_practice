@@ -1,6 +1,7 @@
 import numpy as np
 import random
 import pickle
+from sklearn.externals import joblib
 
 from segment_tree import SumSegmentTree, MinSegmentTree
 
@@ -72,9 +73,10 @@ class ReplayBuffer(object):
         # save data of replay buffer
         obj = self._storage
         filename = 'buffer_agent' + str(agent_id) + '.txt'
-        file = open(filename, 'wb')
-        pickle.dump(obj, file)
-        file.close()
+        joblib.dump(obj, filename)
+        # file = open(filename, 'wb')
+        # pickle.dump(obj, file)
+        # file.close()
 
 class PrioritizedReplayBuffer(ReplayBuffer):
     def __init__(self, size, alpha):
