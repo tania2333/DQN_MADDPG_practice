@@ -1,9 +1,6 @@
 from smac.env import StarCraft2Env
-from RL_brain import MADDPG
-import numpy as np
-import tensorflow as tf
 from RL_brain2 import *
-import os
+
 
 
 class OU_noise(object):
@@ -98,7 +95,6 @@ def run_this(RL_set, n_episode, learn_freq, Num_Exploration, Num_Training, n_age
                 reward_hl_own_new.append(env.get_agent_health(agent_id))
                 reward_hl_en_new.append(env.get_enemy_health(agent_id))
 
-            reward_set = []
             # obtain propre reward of every agent and stored it in transition
             for agent_id in range(n_agents):
                 if (agent_id in dead_unit):
@@ -120,10 +116,7 @@ def run_this(RL_set, n_episode, learn_freq, Num_Exploration, Num_Training, n_age
                     reward = (reward_hl_own_new[agent_id] - reward_hl_own_old[agent_id]) * 5
 
                 episode_reward_agent[agent_id] += reward
-                reward_set.append(reward)
-
-            for agent_id in range(n_agents):
-                RL_set[agent_id][0].store_transition(observation_set, action_output_set, reward_set[agent_id], observation_set_next, done)  #action_set_actual
+                RL_set[agent_id][0].store_transition(observation_set, action_output_set, reward, observation_set_next, done)  #action_set_actual
 
             # swap observation
             observation_set = observation_set_next
@@ -204,7 +197,7 @@ if __name__ == "__main__":
     n_agents = env_info["n_agents"]
     # episode_len = env_info["episode_limit"]
     learn_freq = 1
-    timesteps = 400000
+    timesteps = 300000
     Num_Exploration = int(timesteps * 0.1)         # 随着试验次数随时更改
     save_model_freq = 20000                              # 随着试验次数随时更改
     Num_Training = timesteps - Num_Exploration

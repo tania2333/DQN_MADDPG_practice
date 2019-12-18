@@ -7,8 +7,6 @@ import os
 class ActorNetwork(object):
     def __init__(self, sess, learning_rate, tau, batch_size, num_agents, n_features, n_actions, agent_id, memory_size):
         self.sess = sess
-        # self.s_dim = state_dim
-        # self.a_dim = action_dim
         self.learning_rate = learning_rate
         self.tau = tau
         self.batch_size = batch_size
@@ -37,9 +35,7 @@ class ActorNetwork(object):
         with tf.name_scope("actor_gradients"):
             grads = []
             grads.append(tf.gradients(self.out, self.network_params, -self.action_gradient))# (y,x,w) y对x中每个元素求导，之后w加权
-            # print("actor_grads",grads) #                = 4 [grad1,2,3,4]
             grads = np.array(grads)
-            # print(grads.shape)    (4, 8)
             self.unnormalized_actor_gradients = [tf.reduce_sum(list(grads[:, i]), axis=0) for i in range(len(self.network_params))]   # len_net_param=8
             self.actor_gradients = list(map(lambda x: tf.div(x, self.batch_size), self.unnormalized_actor_gradients))  # unn(1,8)  len(actor_gradients)=8
 
@@ -146,13 +142,10 @@ class CriticNetwork(object):
                  for i in range(len(self.target_network_params))]
 
         self.predicted_q_value = tf.placeholder(tf.float16, (None, self.output_len), name="predicted_q_value")
-        # self.own_action = tf.placeholder(tf.float32, (None, self.n_actions), name="current_agent_action")
-
 
         self.critic_loss = tf.reduce_mean(tf.square(self.predicted_q_value - self.out))
         self.optimize = tf.train.AdamOptimizer(self.learning_rate).minimize(self.critic_loss)
 
-        # self.action_grads = tf.gradients(self.out, self.own_action)  # out.shape:batchs,2,1; action: n,2,1;
         self.action_grads = tf.gradients(self.out, self.own_action)  # out.shape:batchs,2,1; action: n,2,1;
 
 
@@ -168,7 +161,6 @@ class CriticNetwork(object):
         return inputs, own_action, other_action, out
 
     def train(self, inputs, action, other_action, predicted_q_value):
-        # return self.sess.run([self.out, self.optimize, self.loss], feed_dict={
         self.learn_step_counter += 1
 
         return self.sess.run([self.out, self.critic_loss, self.optimize], feed_dict={
