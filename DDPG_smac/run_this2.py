@@ -30,7 +30,8 @@ class OU_noise(object):
 		self.sigma = self.max_sigma - (self.max_sigma - self.min_sigma) * min(1.0, training_step / self.decay_period)
 		return np.clip(action + state, self.action_low, self.action_high)
 
-def run_this(RL_set, n_episode, learn_freq, Num_Exploration, Num_Training, n_agents, n_actions, vector_obs_len, gamma, update_target_net, save_model_freq):
+def run_this(RL_set, n_episode, learn_freq, Num_Exploration, Num_Training, n_agents, n_actions, vector_obs_len,
+             gamma, update_target_net, save_model_freq, batch_size):
     step = 0
     training_step = 0
     n_actions_no_attack = 6
@@ -118,7 +119,7 @@ def run_this(RL_set, n_episode, learn_freq, Num_Exploration, Num_Training, n_age
                     reward = (reward_hl_own_new[agent_id] - reward_hl_own_old[agent_id]) * 5
 
                 episode_reward_agent[agent_id] += reward
-                RL_set[agent_id][0].store_transition(observation_set, action_output_set, reward, observation_set_next, done)  #action_set_actual
+                RL_set[agent_id][0].store_transition(observation_set[agent_id], action_output_set[agent_id], reward, observation_set_next[agent_id], done)  #action_set_actual
 
             # swap observation
             observation_set = observation_set_next
@@ -140,38 +141,22 @@ def run_this(RL_set, n_episode, learn_freq, Num_Exploration, Num_Training, n_age
             if (step > Num_Exploration) and (step % learn_freq == 0):
                 for agent_id in range(n_agents):
                     total_obs_batch, total_act_batch, rew_batch, total_next_obs_batch, done_mask = RL_set[agent_id][0].memory.sample(batch_size)
-                    act_batch = total_act_batch[:, 0, :]  # 0 代表当前智能体的动作
-
-                    other_act_batch = []
-                    for i in range(1, n_agents):
-                        other_act_batch.append(total_act_batch[:, i, :])
-                    other_act_batch = np.hstack(other_act_batch)  # 其他智能体的动作，可以将其放到critic网络进行训练
-                    obs_batch = total_obs_batch[:, 0, :]  # 当前智能体局部观察
-                    next_obs_batch = total_next_obs_batch[:, 0, :]
-
-                    other_actors = []
-                    if (agent_id != n_agents - 1):
-                        for i in range(agent_id + 1, n_agents):
-                            other_actors.append(RL_set[i])
-                    if (agent_id != 0):
-                        for i in range(agent_id):
-                            other_actors.append(RL_set[i])
-                    next_other_action = []
-                    for i in range(1, n_agents):
-                        next_other_action.append(other_actors[i - 1][0].predict_target(total_next_obs_batch[:, i, :]))
-                    next_other_action = np.hstack(next_other_action)
                     actor = RL_set[agent_id][0]
                     critic = RL_set[agent_id][1]
 
-                    target_q = rew_batch.reshape(-1, 1) + gamma * critic.predict_target(next_obs_batch, actor.predict_target(next_obs_batch), next_other_action)
+                    total_obs_batch = total_obs_batch[:, 0, :]
+                    total_act_batch = total_act_batch[:, 0, :]
+                    total_next_obs_batch = total_next_obs_batch[:, 0, :]
+
+                    target_q = rew_batch.reshape(-1, 1) + gamma * critic.predict_target(total_next_obs_batch, actor.predict_target(total_next_obs_batch))
                     orig_param_critic = critic.get_params()
-                    predicted_q_value, critic_cost, _ = critic.train(obs_batch, act_batch, other_act_batch, target_q)
+                    q_value, critic_cost, _ = critic.train(total_obs_batch, total_act_batch, target_q)
                     new_param_critic = critic.get_params()
                     RL_set[agent_id][1].get_critic_loss(critic_cost)
-                    out1 = critic.predict(obs_batch, act_batch, other_act_batch)
-                    act_batch_input = actor.predict(obs_batch)
-                    out, grads = critic.action_gradients(obs_batch, act_batch_input, other_act_batch)  # delta Q对a的导数
-                    actor.train(obs_batch, grads)
+                    act_batch_input = actor.predict(total_obs_batch)
+                    action_grads = critic.action_gradients(total_obs_batch, act_batch_input)  # delta Q对a的导数
+                    actor.train(total_obs_batch, action_grads)
+
                     if(training_step % update_target_net == 0):
                         actor.update_target_network()
                         critic.update_target_network()
@@ -199,20 +184,20 @@ if __name__ == "__main__":
     vector_obs_len = 179  # local observation 80
     n_features = vector_obs_len
     n_actions = env_info["n_actions"]
-    n_episode = 2000   #每个episode大概能跑200步
+    n_episode = 1500   #每个episode大概能跑200步
     n_agents = env_info["n_agents"]
     # episode_len = env_info["episode_limit"]
     learn_freq = 1
     timesteps = 300000
-    Num_Exploration = int(timesteps * 0.1 / 10)         # 随着试验次数随时更改
+    Num_Exploration = int(timesteps * 0.1)         # 随着试验次数随时更改
     save_model_freq = 20000                              # 随着试验次数随时更改
     Num_Training = timesteps - Num_Exploration
-    learning_rate_actor = 0.01      #1e-4
-    learning_rate_critic = 0.01      #1e-3
+    learning_rate_actor = 1e-4
+    learning_rate_critic = 1e-3
     tau = 0.01
     batch_size = 64
     output_len = 1
-    reward_decay = 0.95  # 0.99
+    reward_decay = 0.99  # 0.99
     update_target_freq = 100
     load_model = False
     model_load_steps = 20000
@@ -226,9 +211,8 @@ if __name__ == "__main__":
         with sess.as_default():
             with g.as_default():
                 net_set = []
-                actor = ActorNetwork(sess, learning_rate_actor, tau, batch_size, n_agents, n_features, n_actions, i, memory_size=Num_Training)
-                critic = CriticNetwork(sess, learning_rate_critic, tau, actor.get_num_trainable_vars(), n_agents, n_features,
-                                       output_len, n_actions, i)
+                actor = ActorNetwork(sess, learning_rate_actor, tau, n_features, n_actions, i, memory_size=Num_Training)
+                critic = CriticNetwork(sess, learning_rate_critic, tau, n_features, output_len, n_actions, i)
                 if (load_model):
                     actor.load_model(model_load_steps)
                     # critic.load_model(model_load_steps)
@@ -241,4 +225,5 @@ if __name__ == "__main__":
         agent_set.append(net_set)
 
     # run_this写成一个所有智能体执行的函数
-    run_this(agent_set, n_episode, learn_freq, Num_Exploration, Num_Training, n_agents, n_actions, vector_obs_len, reward_decay, update_target_freq, save_model_freq)
+    run_this(agent_set, n_episode, learn_freq, Num_Exploration, Num_Training, n_agents, n_actions, vector_obs_len, reward_decay,
+             update_target_freq, save_model_freq, batch_size)
