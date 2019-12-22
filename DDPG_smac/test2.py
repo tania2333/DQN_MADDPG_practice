@@ -112,7 +112,7 @@ if __name__ == "__main__":
     vector_obs_len = 179  # local observation 80
     n_features = vector_obs_len
     n_actions = env_info["n_actions"]
-    n_episode = 4000   #每个episode大概能跑200步
+    n_episode = 200   #每个episode大概能跑200步
     n_agents = env_info["n_agents"]
     # episode_len = env_info["episode_limit"]
     learn_freq = 1
@@ -128,7 +128,7 @@ if __name__ == "__main__":
     reward_decay = 0.99
     update_target_freq = 100
     load_model = True
-    model_load_steps = 0
+    model_load_steps = 260000
 
     agent_set = []
 
@@ -139,7 +139,7 @@ if __name__ == "__main__":
         with sess.as_default():
             with g.as_default():
                 net_set = []
-                actor = ActorNetwork(sess, learning_rate_actor, tau, batch_size, n_agents, n_features, n_actions, i, memory_size=Num_Training)
+                actor = ActorNetwork(sess, learning_rate_actor, tau, n_features, n_actions, i, memory_size=Num_Training)
                 if (load_model):
                     actor.load_model(model_load_steps)
                     # critic.load_model(model_load_steps)
