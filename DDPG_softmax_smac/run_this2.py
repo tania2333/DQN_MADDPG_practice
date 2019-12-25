@@ -1,17 +1,49 @@
 from smac.env import StarCraft2Env
 from RL_brain2 import *
-import os
 
-def run_this(RL_set, n_episode, n_agents, n_actions, vector_obs_len):
+
+
+class OU_noise(object):
+	def __init__(self, n_actions, action_low, action_high, decay_period, mu=0.0, theta=0.1, max_sigma=0.2, min_sigma=0):
+		self.mu = mu
+		self.theta = theta
+		self.sigma = max_sigma
+		self.max_sigma = max_sigma
+		self.min_sigma = min_sigma
+		self.decay_period = decay_period
+		self.num_actions = n_actions
+		self.action_low = action_low
+		self.action_high = action_high
+		self.reset()
+
+	def reset(self):
+		self.state = np.zeros(self.num_actions)
+
+	def state_update(self):
+		x = self.state
+		dx = self.theta * (self.mu - x) + self.sigma * np.random.randn(self.num_actions)
+		self.state = x + dx
+
+	def add_noise(self, action, training_step):
+		self.state_update()
+		state = self.state
+		self.sigma = self.max_sigma - (self.max_sigma - self.min_sigma) * min(1.0, training_step / self.decay_period)
+		return np.clip(action + state, self.action_low, self.action_high)
+
+def run_this(RL_set, n_episode, learn_freq, Num_Exploration, Num_Training, n_agents, n_actions, vector_obs_len,
+             gamma, update_target_net, save_model_freq, batch_size):
     step = 0
+    training_step = 0
     n_actions_no_attack = 6
     action_list = []
+    noise = OU_noise(n_actions, -1, 1, decay_period=Num_Training)
     for n in range(n_actions):
         action_list.append(n)
 
     for episode in range(n_episode):
         # initial observation
         env.reset()
+        noise.reset()
         episode_reward_all = 0
         episode_reward_agent = [0 for n in range(n_agents)]
         observation_set = []
@@ -31,14 +63,9 @@ def run_this(RL_set, n_episode, n_agents, n_actions, vector_obs_len):
             action_output_set = []
             dead_unit = []
             for agent_id in range(n_agents):
-                # action_output = noise.add_noise(RL_set[agent_id][0].predict(observation_set[agent_id]), training_step)
                 action_output = RL_set[agent_id][0].predict(observation_set[agent_id])
                 action_output_set.append(action_output)
-                action_norm = (action_output + 1) / 2
-                action_sum = action_norm.sum()
-                if (action_sum == 0):
-                    action_prob = (action_norm + 1) / len(action_norm)
-                else: action_prob = action_norm / action_sum
+                action_prob = action_output
                 action_to_choose = np.random.choice(action_list, p=action_prob.ravel())
                 action_set_actual.append(action_to_choose)
                 avail_actions = env.get_avail_agent_actions(agent_id)
@@ -88,6 +115,7 @@ def run_this(RL_set, n_episode, n_agents, n_actions, vector_obs_len):
                     reward = (reward_hl_own_new[agent_id] - reward_hl_own_old[agent_id]) * 5
 
                 episode_reward_agent[agent_id] += reward
+                RL_set[agent_id][0].store_transition(observation_set[agent_id], action_output_set[agent_id], reward, observation_set_next[agent_id], done)  #action_set_actual
 
             # swap observation
             observation_set = observation_set_next
@@ -96,10 +124,46 @@ def run_this(RL_set, n_episode, n_agents, n_actions, vector_obs_len):
 
             # break while loop when end of this episode
             if done:
+                for i in range(n_agents):
+                    RL_set[i][1].get_episode_reward(episode_reward_agent[i], episode_reward_all, episode)
                 print("steps until now : %s, episode: %s， episode reward: %s" % (step, episode, episode_reward_all))
                 break
 
             step += 1
+
+            if (step == Num_Exploration):
+                print("Training starts.")
+
+            if (step > Num_Exploration) and (step % learn_freq == 0):
+                for agent_id in range(n_agents):
+                    total_obs_batch, total_act_batch, rew_batch, total_next_obs_batch, done_mask = RL_set[agent_id][0].memory.sample(batch_size)
+                    actor = RL_set[agent_id][0]
+                    critic = RL_set[agent_id][1]
+
+                    total_obs_batch = total_obs_batch[:, 0, :]
+                    total_act_batch = total_act_batch[:, 0, :]
+                    total_next_obs_batch = total_next_obs_batch[:, 0, :]
+
+                    target_q = rew_batch.reshape(-1, 1) + gamma * critic.predict_target(total_next_obs_batch, actor.predict_target(total_next_obs_batch))
+                    q_value, critic_cost, _ = critic.train(total_obs_batch, total_act_batch, target_q)
+                    RL_set[agent_id][1].get_critic_loss(critic_cost)
+                    act_batch_input = actor.predict(total_obs_batch)
+                    action_grads = critic.action_gradients(total_obs_batch, act_batch_input)  # delta Q对a的导数
+                    actor.train(total_obs_batch, action_grads)
+
+                    if(training_step % update_target_net == 0):
+                        actor.update_target_network()
+                        critic.update_target_network()
+                    if(training_step % save_model_freq == 0):
+                        actor.save_model(training_step)
+                        # critic.save_model(training_step)
+
+
+                training_step += 1
+
+            if (training_step >= 10000 and training_step % 10000 == 0):
+                print("Model have been trained for %s times" % (training_step))
+
 
     # end of game
     print('game over')
@@ -114,23 +178,23 @@ if __name__ == "__main__":
     vector_obs_len = 179  # local observation 80
     n_features = vector_obs_len
     n_actions = env_info["n_actions"]
-    n_episode = 200   #每个episode大概能跑200步
+    n_episode = 3500   #每个episode大概能跑200步
     n_agents = env_info["n_agents"]
     # episode_len = env_info["episode_limit"]
     learn_freq = 1
-    timesteps = 800000
-    Num_Exploration = int(timesteps * 0.1 / 16)         # 随着试验次数随时更改
-    save_model_freq = 5000                              # 随着试验次数随时更改
+    timesteps = 700000
+    Num_Exploration = int(timesteps * 0.1)         # 随着试验次数随时更改
+    save_model_freq = 20000                              # 随着试验次数随时更改
     Num_Training = timesteps - Num_Exploration
     learning_rate_actor = 1e-4
     learning_rate_critic = 1e-3
     tau = 0.01
     batch_size = 64
     output_len = 1
-    reward_decay = 0.99
+    reward_decay = 0.99  # 0.99
     update_target_freq = 100
-    load_model = True
-    model_load_steps = 600000
+    load_model = False
+    model_load_steps = 20000
 
     agent_set = []
 
@@ -142,6 +206,7 @@ if __name__ == "__main__":
             with g.as_default():
                 net_set = []
                 actor = ActorNetwork(sess, learning_rate_actor, tau, n_features, n_actions, i, memory_size=Num_Training)
+                critic = CriticNetwork(sess, learning_rate_critic, tau, n_features, output_len, n_actions, i)
                 if (load_model):
                     actor.load_model(model_load_steps)
                     # critic.load_model(model_load_steps)
@@ -149,8 +214,10 @@ if __name__ == "__main__":
                     sess.run(tf.global_variables_initializer())
 
                 net_set.append(actor)
+                net_set.append(critic)
 
         agent_set.append(net_set)
 
     # run_this写成一个所有智能体执行的函数
-    run_this(agent_set, n_episode, n_agents, n_actions, vector_obs_len)
+    run_this(agent_set, n_episode, learn_freq, Num_Exploration, Num_Training, n_agents, n_actions, vector_obs_len, reward_decay,
+             update_target_freq, save_model_freq, batch_size)
