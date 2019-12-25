@@ -31,19 +31,17 @@ class OU_noise(object):
 		return np.clip(action + state, self.action_low, self.action_high)
 
 def run_this(RL_set, n_episode, learn_freq, Num_Exploration, Num_Training, n_agents, n_actions, vector_obs_len,
-             gamma, update_target_net, save_model_freq, batch_size):
+             gamma, save_model_freq, batch_size):
     step = 0
     training_step = 0
     n_actions_no_attack = 6
     action_list = []
-    noise = OU_noise(n_actions, -1, 1, decay_period=Num_Training)
     for n in range(n_actions):
         action_list.append(n)
 
     for episode in range(n_episode):
         # initial observation
         env.reset()
-        noise.reset()
         episode_reward_all = 0
         episode_reward_agent = [0 for n in range(n_agents)]
         observation_set = []
@@ -66,7 +64,6 @@ def run_this(RL_set, n_episode, learn_freq, Num_Exploration, Num_Training, n_age
                 action_output = RL_set[agent_id][0].predict(observation_set[agent_id])
                 action_output_set.append(action_output)
                 action_prob = action_output
-                # action_to_choose = np.random.choice(action_list, p=action_prob.ravel())
                 action_to_choose = np.argmax(action_prob)
                 action_set_actual.append(action_to_choose)
                 avail_actions = env.get_avail_agent_actions(agent_id)
@@ -152,9 +149,9 @@ def run_this(RL_set, n_episode, learn_freq, Num_Exploration, Num_Training, n_age
                     action_grads = critic.action_gradients(total_obs_batch, act_batch_input)  # delta Q对a的导数
                     actor.train(total_obs_batch, action_grads)
 
-                    if(training_step % update_target_net == 0):
-                        actor.update_target_network()
-                        critic.update_target_network()
+                    # if(training_step % update_target_net == 0):
+                    actor.update_target_network()
+                    critic.update_target_network()
                     if(training_step % save_model_freq == 0):
                         actor.save_model(training_step)
                         # critic.save_model(training_step)
@@ -179,12 +176,12 @@ if __name__ == "__main__":
     vector_obs_len = 179  # local observation 80
     n_features = vector_obs_len
     n_actions = env_info["n_actions"]
-    n_episode = 1500 #3500   #每个episode大概能跑200步
+    n_episode = 3500   #每个episode大概能跑200步
     n_agents = env_info["n_agents"]
     # episode_len = env_info["episode_limit"]
     learn_freq = 1
-    timesteps = 300000 #700000
-    Num_Exploration = int(timesteps * 0.1 / 10)         # 随着试验次数随时更改
+    timesteps = 700000
+    Num_Exploration = int(timesteps * 0.1)         # 随着试验次数随时更改
     save_model_freq = 20000                              # 随着试验次数随时更改
     Num_Training = timesteps - Num_Exploration
     learning_rate_actor = 1e-4
@@ -193,7 +190,7 @@ if __name__ == "__main__":
     batch_size = 64
     output_len = 1
     reward_decay = 0.99  # 0.99
-    update_target_freq = 100
+    # update_target_freq = 1
     load_model = False
     model_load_steps = 20000
 
@@ -206,7 +203,7 @@ if __name__ == "__main__":
         with sess.as_default():
             with g.as_default():
                 net_set = []
-                actor = ActorNetwork(sess, learning_rate_actor, tau, n_features, n_actions, i, memory_size=Num_Training)
+                actor = ActorNetwork(sess, learning_rate_actor, tau, n_features, n_actions, i, memory_size=Num_Training, num_training=Num_Training)
                 critic = CriticNetwork(sess, learning_rate_critic, tau, n_features, output_len, n_actions, i)
                 if (load_model):
                     actor.load_model(model_load_steps)
@@ -221,4 +218,4 @@ if __name__ == "__main__":
 
     # run_this写成一个所有智能体执行的函数
     run_this(agent_set, n_episode, learn_freq, Num_Exploration, Num_Training, n_agents, n_actions, vector_obs_len, reward_decay,
-             update_target_freq, save_model_freq, batch_size)
+             save_model_freq, batch_size)
