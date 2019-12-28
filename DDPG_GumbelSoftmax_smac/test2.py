@@ -140,7 +140,7 @@ if __name__ == "__main__":
                 net_set = []
                 # actor = ActorNetwork(sess, learning_rate_actor, tau, n_features, n_actions, i, memory_size=Num_Training)
                 actor = ActorNetwork(sess, learning_rate_actor, tau, n_features, n_actions, i, memory_size=Num_Training,
-                                     num_training=Num_Training)
+                                     num_training=Num_Training, test_flag=True)
                 if (load_model):
                     actor.load_model(model_load_steps)
                     # critic.load_model(model_load_steps)

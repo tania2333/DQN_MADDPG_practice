@@ -5,7 +5,7 @@ from replay_buffer import ReplayBuffer
 import os
 
 class ActorNetwork(object):
-    def __init__(self, sess, learning_rate, tau, n_features, n_actions, agent_id, memory_size, num_training):
+    def __init__(self, sess, learning_rate, tau, n_features, n_actions, agent_id, memory_size, num_training, test_flag):
         self.sess = sess
         self.learning_rate = learning_rate
         self.tau = tau
@@ -17,6 +17,7 @@ class ActorNetwork(object):
         self.memory = ReplayBuffer(self.memory_size)
         self.training_step = 0
         self.decay_period = num_training
+        self.test_flag = test_flag
 
         self.inputs, self.out = self.create_actor_network("actor_network")  #in: (,2,1) out(,2,1)/ (?,3,1)
         self.target_inputs, self.target_out = self.create_actor_network("target_actor_network")
@@ -42,7 +43,7 @@ class ActorNetwork(object):
 
     def create_actor_network(self, name):
         inputs = tf.placeholder(tf.float16, shape=(None, self.n_features), name="actor_inputs")
-        out = DDPG.actor_build_network(name, inputs, self.n_features, self.n_actions, self.training_step, self.decay_period)  # (, 2,1)
+        out = DDPG.actor_build_network(name, inputs, self.n_features, self.n_actions, self.training_step, self.decay_period, self.test_flag)  # (, 2,1)
         return inputs, out
 
     def train(self, inputs, action_gradient):
