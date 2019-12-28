@@ -15,9 +15,6 @@ class DDPG:
         first_fc_actor = [n_features, 256]  #[n_features, 256]
         second_fc = [256, 256]              #[256, 128]
         third_fc_actor = [256, n_actions]   #[128, n_actions]
-        action_list = []
-        for i in range(n_actions):
-            action_list.append(float(i))
 
         with tf.variable_scope(name) as scope:
             x = tf.cast(observation, dtype=tf.float32)
