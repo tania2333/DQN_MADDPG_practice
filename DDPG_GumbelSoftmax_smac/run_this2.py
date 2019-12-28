@@ -203,7 +203,7 @@ if __name__ == "__main__":
         with sess.as_default():
             with g.as_default():
                 net_set = []
-                actor = ActorNetwork(sess, learning_rate_actor, tau, n_features, n_actions, i, memory_size=Num_Training,
+                actor = ActorNetwork(sess, learning_rate_actor, tau, n_features, n_actions, i, memory_size=Num_Exploration,
                                      num_training=Num_Training, test_flag=False)
                 critic = CriticNetwork(sess, learning_rate_critic, tau, n_features, output_len, n_actions, i)
                 if (load_model):
