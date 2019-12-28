@@ -1,7 +1,7 @@
 from smac.env import StarCraft2Env
 from RL_brain2 import *
 
-def run_this(RL_set, n_episode, learn_freq, Num_Exploration, Num_Training, n_agents, n_actions, vector_obs_len, gamma, update_target_net, save_model_freq):
+def run_this(RL_set, n_episode, learn_freq, Num_Exploration, n_agents, n_actions, vector_obs_len, gamma, save_model_freq, batchsize):
     step = 0
     training_step = 0
     n_actions_no_attack = 6
@@ -104,7 +104,7 @@ def run_this(RL_set, n_episode, learn_freq, Num_Exploration, Num_Training, n_age
 
             if (step > Num_Exploration) and (step % learn_freq == 0):
                 for agent_id in range(n_agents):
-                    total_obs_batch, total_act_batch, rew_batch, total_next_obs_batch, done_mask = RL_set[agent_id][0].memory.sample(batch_size)
+                    total_obs_batch, total_act_batch, rew_batch, total_next_obs_batch, done_mask = RL_set[agent_id][0].memory.sample(batchsize)
                     act_batch = total_act_batch[:, 0, :]  # 0 代表当前智能体的动作
 
                     other_act_batch = []
@@ -164,12 +164,12 @@ if __name__ == "__main__":
     vector_obs_len = 179  # local observation 80
     n_features = vector_obs_len
     n_actions = env_info["n_actions"]
-    n_episode = 2000   #每个episode大概能跑200步
+    n_episode = 3500   #每个episode大概能跑200步
     n_agents = env_info["n_agents"]
     # episode_len = env_info["episode_limit"]
     learn_freq = 1
-    timesteps = 300000
-    Num_Exploration = int(timesteps * 0.1 / 10)         # 随着试验次数随时更改
+    timesteps = 700000
+    Num_Exploration = int(timesteps * 0.1)         # 随着试验次数随时更改
     save_model_freq = 20000                              # 随着试验次数随时更改
     Num_Training = timesteps - Num_Exploration
     learning_rate_actor = 1e-4
@@ -191,9 +191,9 @@ if __name__ == "__main__":
         with sess.as_default():
             with g.as_default():
                 net_set = []
-                actor = ActorNetwork(sess, learning_rate_actor, tau, batch_size, n_agents, n_features, n_actions, i, memory_size=Num_Training)
-                critic = CriticNetwork(sess, learning_rate_critic, tau, actor.get_num_trainable_vars(), n_agents, n_features,
-                                       output_len, n_actions, i)
+                actor = ActorNetwork(sess, learning_rate_actor, tau, batch_size, n_agents, n_features, n_actions, i, memory_size=Num_Training,
+                                     num_training=Num_Training, test_flag=False)
+                critic = CriticNetwork(sess, learning_rate_critic, tau, n_agents, n_features, output_len, n_actions, i)
                 if (load_model):
                     actor.load_model(model_load_steps)
                     # critic.load_model(model_load_steps)
@@ -206,4 +206,4 @@ if __name__ == "__main__":
         agent_set.append(net_set)
 
     # run_this写成一个所有智能体执行的函数
-    run_this(agent_set, n_episode, learn_freq, Num_Exploration, Num_Training, n_agents, n_actions, vector_obs_len, reward_decay, update_target_freq, save_model_freq)
+    run_this(agent_set, n_episode, learn_freq, Num_Exploration, n_agents, n_actions, vector_obs_len, reward_decay, save_model_freq, batch_size)
