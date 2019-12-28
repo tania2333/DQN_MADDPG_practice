@@ -30,7 +30,7 @@ class OU_noise(object):
 		self.sigma = self.max_sigma - (self.max_sigma - self.min_sigma) * min(1.0, training_step / self.decay_period)
 		return np.clip(action + state, self.action_low, self.action_high)
 
-def run_this(RL_set, n_episode, learn_freq, Num_Exploration, Num_Training, n_agents, n_actions, vector_obs_len,
+def run_this(RL_set, n_episode, learn_freq, Num_Exploration, n_agents, n_actions, vector_obs_len,
              gamma, save_model_freq, batch_size):
     step = 0
     training_step = 0
@@ -203,7 +203,8 @@ if __name__ == "__main__":
         with sess.as_default():
             with g.as_default():
                 net_set = []
-                actor = ActorNetwork(sess, learning_rate_actor, tau, n_features, n_actions, i, memory_size=Num_Training, num_training=Num_Training, test_flag=False)
+                actor = ActorNetwork(sess, learning_rate_actor, tau, n_features, n_actions, i, memory_size=Num_Training,
+                                     num_training=Num_Training, test_flag=False)
                 critic = CriticNetwork(sess, learning_rate_critic, tau, n_features, output_len, n_actions, i)
                 if (load_model):
                     actor.load_model(model_load_steps)
@@ -217,5 +218,5 @@ if __name__ == "__main__":
         agent_set.append(net_set)
 
     # run_this写成一个所有智能体执行的函数
-    run_this(agent_set, n_episode, learn_freq, Num_Exploration, Num_Training, n_agents, n_actions, vector_obs_len, reward_decay,
+    run_this(agent_set, n_episode, learn_freq, Num_Exploration, n_agents, n_actions, vector_obs_len, reward_decay,
              save_model_freq, batch_size)
