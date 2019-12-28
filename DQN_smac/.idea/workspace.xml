@@ -2,11 +2,12 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="0c3ab0f8-3009-47c1-8d00-211886854aab" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/../DDPG_GumbelSoftmax_smac/.idea/DDPG_GumbelSoftmax_smac.iml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/../DDPG_softmax_smac/.idea/DDPG_softmax_smac.iml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../DDPG_smac/run_this2.py" beforeDir="false" afterPath="$PROJECT_DIR$/../DDPG_smac/run_this2.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../DDPG_smac/test2.py" beforeDir="false" afterPath="$PROJECT_DIR$/../DDPG_smac/test2.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../DDPG_GumbelSoftmax_smac/DDPG.py" beforeDir="false" afterPath="$PROJECT_DIR$/../DDPG_GumbelSoftmax_smac/DDPG.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../DDPG_GumbelSoftmax_smac/test2.py" beforeDir="false" afterPath="$PROJECT_DIR$/../DDPG_GumbelSoftmax_smac/test2.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../MADDPG_smac/MADDPG.py" beforeDir="false" afterPath="$PROJECT_DIR$/../MADDPG_smac/MADDPG.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../MADDPG_smac/RL_brain2.py" beforeDir="false" afterPath="$PROJECT_DIR$/../MADDPG_smac/RL_brain2.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../MADDPG_smac/run_this2.py" beforeDir="false" afterPath="$PROJECT_DIR$/../MADDPG_smac/run_this2.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../maddpg_practice/.idea/workspace.xml" beforeDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
@@ -200,6 +201,7 @@
       <workItem from="1576737092875" duration="2424000" />
       <workItem from="1576830926660" duration="3413000" />
       <workItem from="1577155429904" duration="1821000" />
+      <workItem from="1577511831013" duration="1306000" />
     </task>
     <servers />
   </component>

@@ -1,11 +1,11 @@
 import tensorflow as tf
 import numpy as np
-from MADDPG import MADDPG
+from MADDPG import DDPG
 from replay_buffer import ReplayBuffer
 import os
 
 class ActorNetwork(object):
-    def __init__(self, sess, learning_rate, tau, batch_size, num_agents, n_features, n_actions, agent_id, memory_size):
+    def __init__(self, sess, learning_rate, tau, batch_size, num_agents, n_features, n_actions, agent_id, memory_size, num_training):
         self.sess = sess
         self.learning_rate = learning_rate
         self.tau = tau
@@ -16,13 +16,13 @@ class ActorNetwork(object):
         self.agent_id = agent_id
         self.memory_size = memory_size
         self.memory = ReplayBuffer(self.memory_size)
+        self.training_step = 0
+        self.decay_period = num_training
 
-        self.inputs, self.out = self.create_actor_network("actor_network")  #in: (,2,1) out(,2,1)/ (?,3,1)
-        self.network_params = tf.trainable_variables()   # print('param',len(self.network_params))   8
-
+        self.inputs, self.out = self.create_actor_network("actor_network")  # in: (,2,1) out(,2,1)/ (?,3,1)
         self.target_inputs, self.target_out = self.create_actor_network("target_actor_network")
-        self.target_network_params = tf.trainable_variables()[
-                                     len(self.network_params):]
+        self.network_params = tf.trainable_variables('actor_network')
+        self.target_network_params = tf.trainable_variables('target_actor_network')
 
         with tf.name_scope("actor_update_target_network_params"):
             self.update_target_network_params = \
@@ -33,24 +33,20 @@ class ActorNetwork(object):
         self.action_gradient = tf.placeholder(tf.float16, (None, self.n_actions), name="action_gradient")  # print('action_grad',self.action_gradient) 2,n,2,1 /3,?,3,1
 
         with tf.name_scope("actor_gradients"):
-            grads = []
-            grads.append(tf.gradients(self.out, self.network_params, -self.action_gradient))# (y,x,w) y对x中每个元素求导，之后w加权
-            grads = np.array(grads)
-            self.unnormalized_actor_gradients = [tf.reduce_sum(list(grads[:, i]), axis=0) for i in range(len(self.network_params))]   # len_net_param=8
-            self.actor_gradients = list(map(lambda x: tf.div(x, self.batch_size), self.unnormalized_actor_gradients))  # unn(1,8)  len(actor_gradients)=8
+            self.actor_gradients = tf.gradients(ys=self.out, xs=self.network_params, grad_ys=-self.action_gradient)
 
         self.optimize = tf.train.AdamOptimizer(self.learning_rate)
         self.optimize = self.optimize.apply_gradients(zip(self.actor_gradients, self.network_params))
 
-        self.num_trainable_vars = len(self.network_params) + len(self.target_network_params)
         self.saver = tf.train.Saver(max_to_keep=100000000)
 
     def create_actor_network(self, name):
         inputs = tf.placeholder(tf.float16, shape=(None, self.n_features), name="actor_inputs")
-        out = MADDPG.actor_build_network(name, inputs, self.n_features, self.n_actions)  # (, 2,1)
+        out = DDPG.actor_build_network(name, inputs, self.n_features, self.n_actions, self.training_step, self.decay_period)  # (, 2,1)
         return inputs, out
 
     def train(self, inputs, action_gradient):
+        self.training_step += 1
         self.sess.run(self.optimize, feed_dict={
             self.inputs: inputs,
             self.action_gradient: action_gradient
@@ -68,9 +64,6 @@ class ActorNetwork(object):
 
     def update_target_network(self):
         self.sess.run(self.update_target_network_params)
-
-    def get_num_trainable_vars(self):
-        return self.num_trainable_vars
 
     def store_transition(self, s_set, a_set, r, s_next_set, done):
         s_list = []
@@ -128,11 +121,10 @@ class CriticNetwork(object):
         self.learn_step_counter = 0
 
         self.inputs, self.own_action, self.other_action, self.out = self.create_critic_network("critic_network")
-        self.network_params = tf.trainable_variables()[num_actor_vars:]
+        self.network_params = tf.trainable_variables("critic_network")
 
         self.target_inputs, self.target_own_action, self.target_other_action, self.target_out = self.create_critic_network("target_critic_network")
-        self.target_network_params = tf.trainable_variables()[(len(self.network_params) + num_actor_vars):]
-
+        self.target_network_params = tf.trainable_variables("target_critic_network")
         self.summary_placeholders, self.update_ops, self.summary_op, self.summary_vars, self.summary_writer = self.setup_summary()
 
         with tf.name_scope("critic_update_target_network_params"):
@@ -157,12 +149,11 @@ class CriticNetwork(object):
         own_action = tf.placeholder(tf.float16, shape=(None, self.n_actions), name="critic_action")
         other_action = tf.placeholder(tf.float16, shape=(None, self.n_actions * (self.num_agents-1)), name="critic_other_action")
 
-        out = MADDPG.critic_build_network(name, inputs, self.n_features, self.num_agents, self.n_actions, own_action, other_action)
+        out = DDPG.critic_build_network(name, inputs, self.n_features, self.num_agents, self.n_actions, own_action, other_action)
         return inputs, own_action, other_action, out
 
     def train(self, inputs, action, other_action, predicted_q_value):
         self.learn_step_counter += 1
-
         return self.sess.run([self.out, self.critic_loss, self.optimize], feed_dict={
             self.inputs: inputs,
             self.own_action: action,

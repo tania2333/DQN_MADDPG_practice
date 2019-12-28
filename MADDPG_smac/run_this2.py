@@ -1,48 +1,17 @@
 from smac.env import StarCraft2Env
 from RL_brain2 import *
 
-
-
-class OU_noise(object):
-	def __init__(self, n_actions, action_low, action_high, decay_period, mu=0.0, theta=0.1, max_sigma=0.2, min_sigma=0):
-		self.mu = mu
-		self.theta = theta
-		self.sigma = max_sigma
-		self.max_sigma = max_sigma
-		self.min_sigma = min_sigma
-		self.decay_period = decay_period
-		self.num_actions = n_actions
-		self.action_low = action_low
-		self.action_high = action_high
-		self.reset()
-
-	def reset(self):
-		self.state = np.zeros(self.num_actions)
-
-	def state_update(self):
-		x = self.state
-		dx = self.theta * (self.mu - x) + self.sigma * np.random.randn(self.num_actions)
-		self.state = x + dx
-
-	def add_noise(self, action, training_step):
-		self.state_update()
-		state = self.state
-		self.sigma = self.max_sigma - (self.max_sigma - self.min_sigma) * min(1.0, training_step / self.decay_period)
-		return np.clip(action + state, self.action_low, self.action_high)
-
 def run_this(RL_set, n_episode, learn_freq, Num_Exploration, Num_Training, n_agents, n_actions, vector_obs_len, gamma, update_target_net, save_model_freq):
     step = 0
     training_step = 0
     n_actions_no_attack = 6
     action_list = []
-    noise = OU_noise(n_actions, -1, 1, decay_period=Num_Training)
     for n in range(n_actions):
         action_list.append(n)
 
     for episode in range(n_episode):
         # initial observation
         env.reset()
-        noise.reset()
         episode_reward_all = 0
         episode_reward_agent = [0 for n in range(n_agents)]
         observation_set = []
@@ -62,14 +31,10 @@ def run_this(RL_set, n_episode, learn_freq, Num_Exploration, Num_Training, n_age
             action_output_set = []
             dead_unit = []
             for agent_id in range(n_agents):
-                action_output = noise.add_noise(RL_set[agent_id][0].predict(observation_set[agent_id]), training_step)
+                action_output = RL_set[agent_id][0].predict(observation_set[agent_id])
                 action_output_set.append(action_output)
-                action_norm = (action_output + 1) / 2
-                action_sum = action_norm.sum()
-                if(action_sum == 0):
-                    action_prob = (action_norm+1)/len(action_norm)
-                else: action_prob = action_norm / action_sum
-                action_to_choose = np.random.choice(action_list, p=action_prob.ravel())
+                action_prob = action_output
+                action_to_choose = np.argmax(action_prob)
                 action_set_actual.append(action_to_choose)
                 avail_actions = env.get_avail_agent_actions(agent_id)
                 avail_actions_ind = np.nonzero(avail_actions)[0]
@@ -164,17 +129,17 @@ def run_this(RL_set, n_episode, learn_freq, Num_Exploration, Num_Training, n_age
                     critic = RL_set[agent_id][1]
 
                     target_q = rew_batch.reshape(-1, 1) + gamma * critic.predict_target(next_obs_batch, actor.predict_target(next_obs_batch), next_other_action)
-                    orig_param_critic = critic.get_params()
+                    # orig_param_critic = critic.get_params()
                     predicted_q_value, critic_cost, _ = critic.train(obs_batch, act_batch, other_act_batch, target_q)
-                    new_param_critic = critic.get_params()
+                    # new_param_critic = critic.get_params()
                     RL_set[agent_id][1].get_critic_loss(critic_cost)
-                    out1 = critic.predict(obs_batch, act_batch, other_act_batch)
                     act_batch_input = actor.predict(obs_batch)
                     out, grads = critic.action_gradients(obs_batch, act_batch_input, other_act_batch)  # delta Q对a的导数
                     actor.train(obs_batch, grads)
-                    if(training_step % update_target_net == 0):
-                        actor.update_target_network()
-                        critic.update_target_network()
+                    # if(training_step % update_target_net == 0):
+                    actor.update_target_network()
+                    critic.update_target_network()
+
                     if(training_step % save_model_freq == 0):
                         actor.save_model(training_step)
                         # critic.save_model(training_step)
@@ -207,13 +172,13 @@ if __name__ == "__main__":
     Num_Exploration = int(timesteps * 0.1 / 10)         # 随着试验次数随时更改
     save_model_freq = 20000                              # 随着试验次数随时更改
     Num_Training = timesteps - Num_Exploration
-    learning_rate_actor = 0.01      #1e-4
-    learning_rate_critic = 0.01      #1e-3
+    learning_rate_actor = 1e-4
+    learning_rate_critic = 1e-3
     tau = 0.01
     batch_size = 64
     output_len = 1
-    reward_decay = 0.95  # 0.99
-    update_target_freq = 100
+    reward_decay = 0.99  # 0.99
+    # update_target_freq = 100
     load_model = False
     model_load_steps = 20000
 
