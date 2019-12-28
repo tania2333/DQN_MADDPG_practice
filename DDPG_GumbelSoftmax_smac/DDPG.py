@@ -35,8 +35,8 @@ class DDPG:
                 w_fc3_actor = DDPG.weight_variable('_w_fc3', third_fc_actor, c_names)
                 b_fc3_actor = DDPG.bias_variable('_b_fc3', [third_fc_actor[1]], c_names)
                 logits = tf.matmul(h_fc2_actor, w_fc3_actor) + b_fc3_actor
-                logits_with_noise = DDPG.add_noise(logits, training_step, decay_period)
-                output_actor = tf.nn.softmax(logits_with_noise)   # ( , 14)
+                # logits_with_noise = DDPG.add_noise(logits, training_step, decay_period)
+                output_actor = tf.nn.softmax(logits)   # ( , 14)
                 output_actor = tf.cast(output_actor, dtype=tf.float16)
 
         return output_actor

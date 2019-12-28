@@ -34,12 +34,8 @@ def run_this(RL_set, n_episode, n_agents, n_actions, vector_obs_len):
                 # action_output = noise.add_noise(RL_set[agent_id][0].predict(observation_set[agent_id]), training_step)
                 action_output = RL_set[agent_id][0].predict(observation_set[agent_id])
                 action_output_set.append(action_output)
-                action_norm = (action_output + 1) / 2
-                action_sum = action_norm.sum()
-                if (action_sum == 0):
-                    action_prob = (action_norm + 1) / len(action_norm)
-                else: action_prob = action_norm / action_sum
-                action_to_choose = np.random.choice(action_list, p=action_prob.ravel())
+                action_prob = action_output
+                action_to_choose = np.argmax(action_prob)
                 action_set_actual.append(action_to_choose)
                 avail_actions = env.get_avail_agent_actions(agent_id)
                 avail_actions_ind = np.nonzero(avail_actions)[0]
@@ -103,6 +99,7 @@ def run_this(RL_set, n_episode, n_agents, n_actions, vector_obs_len):
 
     # end of game
     print('game over')
+    print(env.get_stats())
     env.close()
 
 
@@ -130,7 +127,7 @@ if __name__ == "__main__":
     reward_decay = 0.99
     update_target_freq = 100
     load_model = True
-    model_load_steps = 600000
+    model_load_steps = 400000
 
     agent_set = []
 
@@ -141,7 +138,9 @@ if __name__ == "__main__":
         with sess.as_default():
             with g.as_default():
                 net_set = []
-                actor = ActorNetwork(sess, learning_rate_actor, tau, n_features, n_actions, i, memory_size=Num_Training)
+                # actor = ActorNetwork(sess, learning_rate_actor, tau, n_features, n_actions, i, memory_size=Num_Training)
+                actor = ActorNetwork(sess, learning_rate_actor, tau, n_features, n_actions, i, memory_size=Num_Training,
+                                     num_training=Num_Training)
                 if (load_model):
                     actor.load_model(model_load_steps)
                     # critic.load_model(model_load_steps)
