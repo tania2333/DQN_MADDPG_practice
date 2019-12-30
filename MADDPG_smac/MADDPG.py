@@ -13,8 +13,8 @@ class DDPG:
     def actor_build_network(name, observation, n_features, n_actions, training_step, decay_period, test_flag):
         c_names = ['actor_params', tf.GraphKeys.GLOBAL_VARIABLES]
         first_fc_actor = [n_features, 256]  #[n_features, 256]
-        second_fc = [256, 128]              #[256, 128]
-        third_fc_actor = [128, n_actions]   #[128, n_actions]
+        second_fc = [256, 256]              #[256, 128]
+        third_fc_actor = [256, n_actions]   #[128, n_actions]
 
         with tf.variable_scope(name) as scope:
             x = observation
@@ -52,8 +52,8 @@ class DDPG:
         c_names = ['critic_params', tf.GraphKeys.GLOBAL_VARIABLES]
         with tf.variable_scope(name) as scope:
             first_fc_critic = [n_features + n_actions * n_agents, 256]
-            second_fc = [256, 128]
-            third_fc_critic = [128, 1]
+            second_fc = [256, 256]
+            third_fc_critic = [256, 1]
             action = tf.concat([own_action, other_action], axis=1)
             x = tf.concat([observation, action], axis=-1)
             x = tf.cast(x, dtype=tf.float32)
