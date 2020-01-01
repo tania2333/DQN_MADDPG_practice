@@ -129,9 +129,7 @@ def run_this(RL_set, n_episode, learn_freq, Num_Exploration, n_agents, n_actions
                     critic = RL_set[agent_id][1]
 
                     target_q = rew_batch.reshape(-1, 1) + gamma * critic.predict_target(next_obs_batch, actor.predict_target(next_obs_batch), next_other_action)
-                    # orig_param_critic = critic.get_params()
                     predicted_q_value, critic_cost, _ = critic.train(obs_batch, act_batch, other_act_batch, target_q)
-                    # new_param_critic = critic.get_params()
                     RL_set[agent_id][1].get_critic_loss(critic_cost)
                     act_batch_input = actor.predict(obs_batch)
                     out, grads = critic.action_gradients(obs_batch, act_batch_input, other_act_batch)  # delta Q对a的导数

@@ -32,7 +32,6 @@ class ActorNetwork(object):
                  for i in range(len(self.target_network_params))]
 
         self.action_gradient = tf.placeholder(tf.float16, (None, self.n_actions), name="action_gradient")  # print('action_grad',self.action_gradient) 2,n,2,1 /3,?,3,1
-
         with tf.name_scope("actor_gradients"):
             self.actor_gradients = tf.gradients(ys=self.out, xs=self.network_params, grad_ys=-self.action_gradient)
 
