@@ -24,7 +24,7 @@ def parse_args():
     parser.add_argument("--lr", type=float, default=1e-2, help="learning rate for Adam optimizer")
     parser.add_argument("--gamma", type=float, default=0.95, help="discount factor")
     parser.add_argument("--batch-size", type=int, default=1024, help="number of episodes to optimize at the same time")
-    parser.add_argument("--num-units", type=int, default=256, help="number of units in the mlp")
+    parser.add_argument("--num-units", type=int, default=512, help="number of units in the mlp")
     # Checkpointing
     parser.add_argument("--exp-name", type=str, default="8m", help="name of the experiment")
     parser.add_argument("--save-dir", type=str, default="./model/", help="directory in which training state and model should be saved")
@@ -39,7 +39,7 @@ def parse_args():
     parser.add_argument("--plots-dir", type=str, default="./learning_curves/", help="directory where plot data is saved")
     return parser.parse_args()
 
-def mlp_model(input, num_outputs, scope, reuse=False, num_units=256, rnn_cell=None):
+def mlp_model(input, num_outputs, scope, reuse=False, num_units=512, rnn_cell=None):
     # This model takes as input an observation and returns values of all actions
     with tf.variable_scope(scope, reuse=reuse):
         out = input

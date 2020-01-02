@@ -15,7 +15,7 @@ def parse_args():
     # Environment
     parser.add_argument("--scenario", type=str, default="8m", help="name of the scenario script")
     parser.add_argument("--max-episode-len", type=int, default=300, help="maximum episode length")
-    parser.add_argument("--num-episodes", type=int, default=10, help="number of episodes")
+    parser.add_argument("--num-episodes", type=int, default=50, help="number of episodes")
     parser.add_argument("--buffer-size", type=int, default=5000, help="maximum storage size of replay buffer")
     parser.add_argument("--num-adversaries", type=int, default=0, help="number of adversaries")
     parser.add_argument("--good-policy", type=str, default="maddpg", help="policy for good agents")
@@ -29,7 +29,7 @@ def parse_args():
     parser.add_argument("--exp-name", type=str, default="8m", help="name of the experiment")
     parser.add_argument("--save-dir", type=str, default="./model/", help="directory in which training state and model should be saved")
     parser.add_argument("--save-rate", type=int, default=25, help="save model once every time this many episodes are completed")
-    parser.add_argument("--load-dir", type=str, default="./model/model_11261steps/8m", help="directory in which training state and model are loaded")
+    parser.add_argument("--load-dir", type=str, default="./model/model_685201steps/8m", help="directory in which training state and model are loaded")
     # Evaluation
     parser.add_argument("--restore", action="store_true", default=False)
     parser.add_argument("--display", action="store_true", default=True)
