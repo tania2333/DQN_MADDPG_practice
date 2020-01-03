@@ -23,13 +23,13 @@ def parse_args():
     # Core training parameters
     parser.add_argument("--lr", type=float, default=1e-2, help="learning rate for Adam optimizer")
     parser.add_argument("--gamma", type=float, default=0.95, help="discount factor")
-    parser.add_argument("--batch-size", type=int, default=1024, help="number of episodes to optimize at the same time")
-    parser.add_argument("--num-units", type=int, default=256, help="number of units in the mlp")
+    parser.add_argument("--batch-size", type=int, default=64, help="number of episodes to optimize at the same time")
+    parser.add_argument("--num-units", type=int, default=512, help="number of units in the mlp")
     # Checkpointing
     parser.add_argument("--exp-name", type=str, default="8m", help="name of the experiment")
     parser.add_argument("--save-dir", type=str, default="./model/", help="directory in which training state and model should be saved")
     parser.add_argument("--save-rate", type=int, default=25, help="save model once every time this many episodes are completed")
-    parser.add_argument("--load-dir", type=str, default="./model/model_685201steps/8m", help="directory in which training state and model are loaded")
+    parser.add_argument("--load-dir", type=str, default="./model/model_4087027steps/8m", help="directory in which training state and model are loaded")
     # Evaluation
     parser.add_argument("--restore", action="store_true", default=False)
     parser.add_argument("--display", action="store_true", default=True)
@@ -39,7 +39,7 @@ def parse_args():
     parser.add_argument("--plots-dir", type=str, default="./learning_curves/", help="directory where plot data is saved")
     return parser.parse_args()
 
-def mlp_model(input, num_outputs, scope, reuse=False, num_units=256, rnn_cell=None):
+def mlp_model(input, num_outputs, scope, reuse=False, num_units=512, rnn_cell=None):
     # This model takes as input an observation and returns values of all actions
     with tf.variable_scope(scope, reuse=reuse):
         out = input
@@ -174,6 +174,8 @@ def train(arglist):
             #     agent.experience(obs_n[i], action_n[i], rew_n[i], new_obs_n[i], done)
 
             obs_n = new_obs_n
+            reward_hl_own_old = reward_hl_own_new
+            reward_hl_en_old = reward_hl_en_new
 
             for i, rew in enumerate(rew_n):
                 agent_rewards[i][-1] += rew
