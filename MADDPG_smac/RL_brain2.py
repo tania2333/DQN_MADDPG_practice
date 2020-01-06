@@ -33,9 +33,9 @@ class ActorNetwork(object):
 
         self.action_gradient = tf.placeholder(tf.float16, (None, self.n_actions), name="action_gradient")  # print('action_grad',self.action_gradient) 2,n,2,1 /3,?,3,1
         with tf.name_scope("actor_gradients"):
-            self.actor_gradients = tf.gradients(ys=self.out, xs=self.network_params, grad_ys=-self.action_gradient)
+            self.actor_gradients = tf.gradients(ys=self.out, xs=self.network_params, grad_ys=self.action_gradient)
 
-        self.optimize = tf.train.AdamOptimizer(self.learning_rate)
+        self.optimize = tf.train.AdamOptimizer(-self.learning_rate)
         self.optimize = self.optimize.apply_gradients(zip(self.actor_gradients, self.network_params))
 
         self.saver = tf.train.Saver(max_to_keep=100000000)
