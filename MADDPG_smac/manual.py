@@ -1,0 +1,2 @@
+#run_this1是把Actor和Critic都放到一个类里MADDPG
+#run_this2是借鉴之前BicNet把它们分开来写的
