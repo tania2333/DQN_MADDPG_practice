@@ -95,7 +95,7 @@ class CriticNetwork(object):
 
     """
 
-    def __init__(self, sess, learning_rate, tau, num_actor_vars, num_agents, vector_obs_len, output_len, hidden_vector_len):
+    def __init__(self, sess, learning_rate, tau, num_actor_vars, num_agents, vector_obs_len, output_len, hidden_vector_len, action_dim):
         self.sess = sess
         self.learning_rate = learning_rate
         self.tau = tau
@@ -103,6 +103,7 @@ class CriticNetwork(object):
         self.obs_len = vector_obs_len
         self.output_len = output_len
         self.hidden_vector_len = hidden_vector_len
+        self.action_dim = action_dim
 
         self.inputs, self.action, self.out = self.create_critic_network("critic_network")
         self.network_params = tf.trainable_variables()[num_actor_vars:]
@@ -141,7 +142,7 @@ class CriticNetwork(object):
 
     def create_critic_network(self, name):
         inputs = tf.placeholder(tf.float32, shape=(None, self.num_agents, self.obs_len), name="critic_inputs")
-        action = tf.placeholder(tf.float32, shape=(None, self.num_agents, self.output_len), name="critic_action")
+        action = tf.placeholder(tf.float32, shape=(None, self.num_agents, self.action_dim), name="critic_action")
 
         out = CommNet.critic_build_network(name, inputs, action, self.num_agents, self.hidden_vector_len, self.output_len)
         return inputs, action, out
