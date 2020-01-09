@@ -31,7 +31,7 @@ def main():
     n_actions= env_info["n_actions"]
     output_len = n_actions
     lr = 0.002
-    buffer_size = int(timesteps * 0.1 / 70 )  # 80000 # 减少一下，尽量是训练步数的1/10  70000  test 200  80000 20000
+    buffer_size = int(timesteps * 0.1)  # 80000 # 减少一下，尽量是训练步数的1/10  70000  test 200  80000 20000
     batch_size = 32  # 32
     gamma = 0.99
     num_agents = 8
@@ -43,8 +43,8 @@ def main():
     num_exploring = buffer_size  # buffer_size
     action_low = -1
     action_high = 1
-    save_freq = 1000 #10000
-    critic_output_len = n_actions
+    save_freq = 10000
+    critic_output_len = 1
 
     logdir = "tensorboard/%s/%s_lr%s/%s" % (
         "BicNet",
@@ -166,7 +166,7 @@ def main():
             if (t >= num_exploring):
                 local_s_batch, global_s_batch, a_batch, r_batch, done_batch, local_s2_batch, global_s2_batch = replay_buffer.sample_batch(batch_size)  # [group0:[batch_size, trace.dimension], group1, ... group8]
                 target_q = r_batch + gamma * critic.predict_target(global_s2_batch, actor.predict_target(local_s2_batch))
-                predicted_q_value, _ = critic.train(global_s_batch, a_batch, np.reshape(target_q, (batch_size, num_agents, output_len)))
+                predicted_q_value, _ = critic.train(global_s_batch, a_batch, np.reshape(target_q, (batch_size, num_agents, critic_output_len)))
                 a_outs = actor.predict(local_s_batch)  # a_outs和a_batch是完全相同的
                 grads = critic.action_gradients(global_s_batch, a_outs)  # delta Q对a的导数
                 actor.train(local_s_batch, grads)
@@ -178,9 +178,10 @@ def main():
                 if(t % save_freq == 0):
                     model_file_save = os.path.join("model/"+str(step_train) + "_" + "training_steps_model/", "8m")
                     U.save_state(model_file_save)
+                    print("Model have been trained for %s times" % (step_train))
                     # replay_buffer.save()
 
-        print("Total reward in episode {} = {}".format(e, episode_reward))
+        print("steps until now : %s, episode: %s， episode reward: %s" % (t, e, episode_reward))
         logger.record_tabular("steps", t)
         logger.record_tabular("episodes", e)
         logger.record_tabular("reward_episode", episode_reward)
