@@ -25,38 +25,38 @@ def main():
                         obs_last_action=True, obs_timestep_number=True, state_timestep_number=True)
     env_info = env.get_env_info()
 
-    n_episodes = 3500 #4000    #2000
-    timesteps = 700000
+    n_episodes = 200 #4000    #2000
+    # timesteps = 700000
     n_agents = env_info["n_agents"]
     n_actions= env_info["n_actions"]
     output_len = n_actions
     lr = 0.002
-    buffer_size = int(timesteps * 0.1 / 70 )  # 80000 # 减少一下，尽量是训练步数的1/10  70000  test 200  80000 20000
+    # buffer_size = int(timesteps * 0.1 / 70 )  # 80000 # 减少一下，尽量是训练步数的1/10  70000  test 200  80000 20000
     batch_size = 32  # 32
-    gamma = 0.99
+    # gamma = 0.99
     num_agents = 8
     local_obs_len = 179  # local obs：80 ; global state:168;
     global_state_len = 348   # 179+169
 
     hidden_vector_len = 256  # 128  # 1  256
     tau = 0.001
-    num_exploring = buffer_size  # buffer_size
+    # num_exploring = buffer_size  # buffer_size
     action_low = -1
     action_high = 1
-    save_freq = 1000 #10000
+    # save_freq = 1000 #10000
     critic_output_len = n_actions
 
-    logdir = "tensorboard/%s/%s_lr%s/%s" % (
-        "BicNet",
-        timesteps,
-        lr,
-        start_time
-    )
-
-    Logger.DEFAULT \
-        = Logger.CURRENT \
-        = Logger(dir=None,
-                 output_formats=[TensorBoardOutputFormat(logdir)])
+    # logdir = "tensorboard/%s/%s_lr%s/%s" % (
+    #     "BicNet",
+    #     timesteps,
+    #     lr,
+    #     start_time
+    # )
+    #
+    # Logger.DEFAULT \
+    #     = Logger.CURRENT \
+    #     = Logger(dir=None,
+    #              output_formats=[TensorBoardOutputFormat(logdir)])
 
     sess = U.make_session()
     sess.__enter__()
@@ -65,12 +65,12 @@ def main():
     critic = CriticNetwork(sess, lr, tau, actor.get_num_trainable_vars(), num_agents, global_state_len,
                               critic_output_len, hidden_vector_len, n_actions)
     sess.run(tf.global_variables_initializer())
-    replay_buffer = ReplayBuffer(buffer_size)
-    action_noise = OU_noise(decay_period=timesteps - buffer_size)
+    # replay_buffer = ReplayBuffer(buffer_size)
+    # action_noise = OU_noise(decay_period=timesteps - buffer_size)
 
-    action_noise.reset()
+    # action_noise.reset()
     U.initialize()
-    model_file_load = os.path.join("model/"+str(1) + "_" + "training_steps_model/", "8m")
+    model_file_load = os.path.join("model/"+str(60001) + "_" + "training_steps_model/", "8m")
     U.load_state(model_file_load, sess)
 
     t = 0
@@ -160,17 +160,18 @@ def main():
             global_state_expand = new_global_state_expand
 
         print("Total reward in episode {} = {}".format(e, episode_reward))
-        logger.record_tabular("steps", t)
-        logger.record_tabular("episodes", e)
-        logger.record_tabular("reward_episode", episode_reward)
-        for i in range(n_agents):
-            logger.record_tabular("reward_agent_"+str(i), episode_reward_agent[i])
-
-        logger.dump_tabular()
+        # logger.record_tabular("steps", t)
+        # logger.record_tabular("episodes", e)
+        # logger.record_tabular("reward_episode", episode_reward)
+        # for i in range(n_agents):
+        #     logger.record_tabular("reward_agent_"+str(i), episode_reward_agent[i])
+        #
+        # logger.dump_tabular()
 
     # model_file_save = os.path.join(str(t) + "_" + "model_segment_training/", "defeat_zerglings")
     # U.save_state(model_file_save)
-
+    print('game over')
+    print(env.get_stats())
     env.close()
 
 
