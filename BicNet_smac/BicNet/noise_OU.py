@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 class OU_noise(object):
-	def __init__(self, mu=0.0, theta=0.15, max_sigma=0.15, min_sigma=0.08, decay_period = 0):  #0.2
+	def __init__(self, mu=0.0, theta=0.15, max_sigma=0.2, min_sigma=0.05, decay_period = 0):  #0.2
 		self.mu = mu
 		self.theta = theta
 		self.sigma = max_sigma

@@ -73,6 +73,11 @@ def main():
     # U.load_state(model_file_load, sess)
     U.initialize()
 
+    model_load_steps = 400001
+    model_file_load = os.path.join("model/" + str(model_load_steps) + "_" + "training_steps_model_pre/", "8m")
+    U.load_state(model_file_load, sess)
+    print("model trained for %s steps have been loaded" % (model_load_steps))
+
 
     t = 0
     step_train = 0
@@ -98,7 +103,7 @@ def main():
             critic_input = np.expand_dims(global_state_expand, axis=0)
             actor_input = np.expand_dims(local_obs, axis=0)
             action = actor.predict(actor_input)[0]
-            act_with_noise = np.clip(action + action_noise.get_noise(step_train), action_low, action_high)
+            act_with_noise = action  #np.clip(action + action_noise.get_noise(step_train), action_low, action_high)
             act_mat_norm = (act_with_noise+1)/2
             actions = []
             dead_unit = []
@@ -145,10 +150,9 @@ def main():
                     target_id = actions[i] - 6
                     health_reduce_en = reward_hl_en_old[target_id] - reward_hl_en_new[target_id]
                     if (health_reduce_en > 0):
-                        if (reward_base > 0):
-                            rew_expand[i] = 2 + reward_base
-                        else:
-                            rew_expand[i] = 2
+                        rew_expand[i] = 2 + health_reduce_en * 5
+                        if (reward_base > 50):
+                            rew_expand[i] += 20
                     else:
                         rew_expand[i] = 1
                 else:

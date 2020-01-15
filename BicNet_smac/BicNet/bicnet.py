@@ -34,10 +34,12 @@ class BiCNet:
     @staticmethod # 理解此处的建模方法是本代码实现的关键
     def shared_dense_layer_tanh(name, observation, num_agents, output_len):
         H = []
+        w_initializer = tf.contrib.layers.xavier_initializer()
+        b_initializer = tf.contrib.layers.xavier_initializer()
         with tf.variable_scope(name, reuse=tf.AUTO_REUSE):
             for j in range(num_agents):
                 agent_obs = observation[:, j]   #（batches, 1) or 2
-                agent_encoded = tf.layers.dense(agent_obs, output_len, name="dense", activation=tf.nn.tanh)  # always (batches, 1)  out_len:输出的维度大小，outputs会改变inputs的最后一维为output_len
+                agent_encoded = tf.layers.dense(agent_obs, output_len, name="dense", activation=tf.nn.tanh, kernel_initializer=w_initializer, bias_initializer=b_initializer)  # always (batches, 1)  out_len:输出的维度大小，outputs会改变inputs的最后一维为output_len
                 tf.summary.histogram(name + "/dense/kernel", tf.get_variable("dense/kernel"))
                 H.append(agent_encoded)
             H = tf.stack(H, 1)  #来自同一组的放在一列进行拼接  (batches, 2)
@@ -46,11 +48,13 @@ class BiCNet:
     @staticmethod  # 理解此处的建模方法是本代码实现的关键
     def shared_dense_layer(name, observation, num_agents, output_len):
         H = []
+        w_initializer = tf.contrib.layers.xavier_initializer()
+        b_initializer = tf.contrib.layers.xavier_initializer()
         with tf.variable_scope(name, reuse=tf.AUTO_REUSE):
             for j in range(num_agents):
                 agent_obs = observation[:, j]  # （batches, 1) or 2
                 agent_encoded = tf.layers.dense(agent_obs, output_len,
-                                                name="dense")  # always (batches, 1)  out_len:输出的维度大小，outputs会改变inputs的最后一维为output_len
+                                                name="dense", kernel_initializer=w_initializer, bias_initializer=b_initializer)  # always (batches, 1)  out_len:输出的维度大小，outputs会改变inputs的最后一维为output_len
                 tf.summary.histogram(name + "/dense/kernel", tf.get_variable("dense/kernel"))
                 H.append(agent_encoded)
             H = tf.stack(H, 1)  # 来自同一组的放在一列进行拼接  (batches, 2)

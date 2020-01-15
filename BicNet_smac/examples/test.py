@@ -25,7 +25,7 @@ def main():
                         obs_last_action=True, obs_timestep_number=True, state_timestep_number=True)
     env_info = env.get_env_info()
 
-    n_episodes = 200 #4000    #2000
+    n_episodes = 100 #4000    #2000
     # timesteps = 700000
     n_agents = env_info["n_agents"]
     n_actions= env_info["n_actions"]
@@ -44,7 +44,7 @@ def main():
     action_low = -1
     action_high = 1
     # save_freq = 1000 #10000
-    critic_output_len = n_actions
+    critic_output_len = 1
 
     # logdir = "tensorboard/%s/%s_lr%s/%s" % (
     #     "BicNet",
@@ -70,8 +70,10 @@ def main():
 
     # action_noise.reset()
     U.initialize()
-    model_file_load = os.path.join("model/"+str(60001) + "_" + "training_steps_model/", "8m")
+    model_load_steps = 400001
+    model_file_load = os.path.join("model/"+str(model_load_steps) + "_" + "training_steps_model/", "8m")
     U.load_state(model_file_load, sess)
+    print("model trained for %s steps have been loaded" % (model_load_steps))
 
     t = 0
     # step_train = 0
