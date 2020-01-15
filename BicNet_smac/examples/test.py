@@ -25,22 +25,22 @@ def main():
                         obs_last_action=True, obs_timestep_number=True, state_timestep_number=True)
     env_info = env.get_env_info()
 
-    n_episodes = 100 #4000    #2000
-    # timesteps = 700000
+    n_episodes = 3500 #4000    #2000
+    timesteps = 700000
     n_agents = env_info["n_agents"]
     n_actions= env_info["n_actions"]
     output_len = n_actions
     lr = 0.002
-    # buffer_size = int(timesteps * 0.1 / 70 )  # 80000 # 减少一下，尽量是训练步数的1/10  70000  test 200  80000 20000
+    buffer_size = int(timesteps * 0.1 / 70)  # 80000 # 减少一下，尽量是训练步数的1/10  70000  test 200  80000 20000
     batch_size = 32  # 32
-    # gamma = 0.99
+    gamma = 0.99
     num_agents = 8
     local_obs_len = 179  # local obs：80 ; global state:168;
     global_state_len = 348   # 179+169
 
     hidden_vector_len = 256  # 128  # 1  256
     tau = 0.001
-    # num_exploring = buffer_size  # buffer_size
+    num_exploring = buffer_size  # buffer_size
     action_low = -1
     action_high = 1
     # save_freq = 1000 #10000
@@ -65,12 +65,13 @@ def main():
     critic = CriticNetwork(sess, lr, tau, actor.get_num_trainable_vars(), num_agents, global_state_len,
                               critic_output_len, hidden_vector_len, n_actions)
     sess.run(tf.global_variables_initializer())
+    replay_buffer = ReplayBuffer(buffer_size)
     # replay_buffer = ReplayBuffer(buffer_size)
     # action_noise = OU_noise(decay_period=timesteps - buffer_size)
 
     # action_noise.reset()
     U.initialize()
-    model_load_steps = 400001
+    model_load_steps = 410001
     model_file_load = os.path.join("model/"+str(model_load_steps) + "_" + "training_steps_model/", "8m")
     U.load_state(model_file_load, sess)
     print("model trained for %s steps have been loaded" % (model_load_steps))
@@ -157,9 +158,18 @@ def main():
 
                 episode_reward_agent[i] += rew_expand[i]
 
+            replay_buffer.add(local_obs, global_state_expand, act_with_no_noise, rew_expand, terminated, new_local_obs, new_global_state_expand)
+
+
             episode_reward += reward_base
             local_obs = new_local_obs
             global_state_expand = new_global_state_expand
+            if (t >= num_exploring):
+                local_s_batch, global_s_batch, a_batch, r_batch, done_batch, local_s2_batch, global_s2_batch = replay_buffer.sample_batch(
+                    batch_size)  # [group0:[batch_size, trace.dimension], group1, ... group8]
+                target_q = r_batch + gamma * critic.predict_target(global_s2_batch,
+                                                                   actor.predict_target(local_s2_batch))
+                a_q = target_q
 
         print("Total reward in episode {} = {}".format(e, episode_reward))
         # logger.record_tabular("steps", t)

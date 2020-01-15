@@ -22,7 +22,7 @@ def main():
     start_time = datetime.datetime.now().strftime("%Y%m%d%H%M")
 
     env = StarCraft2Env(map_name="8m", reward_only_positive=False, reward_scale_rate=200, state_last_action=True,
-                        obs_last_action=True, obs_timestep_number=True, state_timestep_number=True)
+                        obs_last_action=True, obs_timestep_number=True, state_timestep_number=True) #reward_defeat=-200
     env_info = env.get_env_info()
 
     n_episodes = 3500 #4000    #2000
@@ -72,11 +72,6 @@ def main():
     # model_file_load = os.path.join(str(350000) + "_" + "model_segment_training2/", "defeat_zerglings")
     # U.load_state(model_file_load, sess)
     U.initialize()
-
-    model_load_steps = 400001
-    model_file_load = os.path.join("model/" + str(model_load_steps) + "_" + "training_steps_model_pre/", "8m")
-    U.load_state(model_file_load, sess)
-    print("model trained for %s steps have been loaded" % (model_load_steps))
 
 
     t = 0
@@ -130,7 +125,7 @@ def main():
                 if(len(avail_actions_ind) == 1 and avail_actions_ind[0] == 0):
                     dead_unit.append(agent_id)
 
-            reward_base, terminated, _ = env.step(actions)
+            reward_base, terminated, info = env.step(actions)
 
             new_local_obs = env.get_obs()
             new_local_obs = np.array(new_local_obs)
@@ -146,17 +141,25 @@ def main():
             for i in range(n_agents):
                 if (i in dead_unit):
                     rew_expand[i] = 0
-                elif (actions[i] > 5):
-                    target_id = actions[i] - 6
-                    health_reduce_en = reward_hl_en_old[target_id] - reward_hl_en_new[target_id]
-                    if (health_reduce_en > 0):
-                        rew_expand[i] = 2 + health_reduce_en * 5
-                        if (reward_base > 50):
-                            rew_expand[i] += 20
-                    else:
-                        rew_expand[i] = 1
                 else:
-                    rew_expand[i] = (reward_hl_own_new[i] - reward_hl_own_old[i]) * 5
+                    rew_expand[i] = -0.05
+                    if (actions[i] > 5):
+                        target_id = actions[i] - 6
+                        health_reduce_en = reward_hl_en_old[target_id] - reward_hl_en_new[target_id]
+                        if (health_reduce_en > 0):
+                            rew_expand[i] += 2 + health_reduce_en * 5
+                            # if (reward_base > 50):
+                            #     rew_expand[i] += 20
+                        else:
+                            rew_expand[i] += 1
+                    else:
+                        rew_expand[i] += (reward_hl_own_new[i] - reward_hl_own_old[i]) * 5
+                #
+                # if(terminated):
+                #     if(info["battle_won"] is False):
+                #         rew_expand[i] += -20
+                #     else:
+                #         rew_expand[i] += 20
 
                 episode_reward_agent[i] += rew_expand[i]
 
