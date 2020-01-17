@@ -25,7 +25,7 @@ def main():
                         obs_last_action=True, obs_timestep_number=True, state_timestep_number=True)
     env_info = env.get_env_info()
 
-    n_episodes = 3500 #4000    #2000
+    n_episodes = 100 #4000    #2000
     timesteps = 700000
     n_agents = env_info["n_agents"]
     n_actions= env_info["n_actions"]
@@ -71,7 +71,7 @@ def main():
 
     # action_noise.reset()
     U.initialize()
-    model_load_steps = 410001
+    model_load_steps = 190001
     model_file_load = os.path.join("model/"+str(model_load_steps) + "_" + "training_steps_model/", "8m")
     U.load_state(model_file_load, sess)
     print("model trained for %s steps have been loaded" % (model_load_steps))
@@ -158,18 +158,18 @@ def main():
 
                 episode_reward_agent[i] += rew_expand[i]
 
-            replay_buffer.add(local_obs, global_state_expand, act_with_no_noise, rew_expand, terminated, new_local_obs, new_global_state_expand)
+            # replay_buffer.add(local_obs, global_state_expand, act_with_no_noise, rew_expand, terminated, new_local_obs, new_global_state_expand)
 
 
             episode_reward += reward_base
             local_obs = new_local_obs
             global_state_expand = new_global_state_expand
-            if (t >= num_exploring):
-                local_s_batch, global_s_batch, a_batch, r_batch, done_batch, local_s2_batch, global_s2_batch = replay_buffer.sample_batch(
-                    batch_size)  # [group0:[batch_size, trace.dimension], group1, ... group8]
-                target_q = r_batch + gamma * critic.predict_target(global_s2_batch,
-                                                                   actor.predict_target(local_s2_batch))
-                a_q = target_q
+            # if (t >= num_exploring):
+            #     local_s_batch, global_s_batch, a_batch, r_batch, done_batch, local_s2_batch, global_s2_batch = replay_buffer.sample_batch(
+            #         batch_size)  # [group0:[batch_size, trace.dimension], group1, ... group8]
+            #     target_q = r_batch + gamma * critic.predict_target(global_s2_batch,
+            #                                                        actor.predict_target(local_s2_batch))
+            #     a_q = target_q
 
         print("Total reward in episode {} = {}".format(e, episode_reward))
         # logger.record_tabular("steps", t)

@@ -25,13 +25,13 @@ def main():
                         obs_last_action=True, obs_timestep_number=True, state_timestep_number=True) #reward_defeat=-200
     env_info = env.get_env_info()
 
-    n_episodes = 3500 #4000    #2000
-    timesteps = 700000
+    n_episodes = 2500 #4000    #2000
+    timesteps = 500000
     n_agents = env_info["n_agents"]
     n_actions= env_info["n_actions"]
     output_len = n_actions
     lr = 0.002
-    buffer_size = int(timesteps * 0.1)  # 80000 # 减少一下，尽量是训练步数的1/10  70000  test 200  80000 20000
+    buffer_size = 70000 #int(timesteps * 0.1)  # 80000 # 减少一下，尽量是训练步数的1/10  70000  test 200  80000 20000
     batch_size = 32  # 32
     gamma = 0.99
     num_agents = 8
@@ -155,11 +155,11 @@ def main():
                     else:
                         rew_expand[i] += (reward_hl_own_new[i] - reward_hl_own_old[i]) * 5
                 #
-                # if(terminated):
-                #     if(info["battle_won"] is False):
-                #         rew_expand[i] += -20
-                #     else:
-                #         rew_expand[i] += 20
+                if(terminated):
+                    if(info["battle_won"] is False):
+                        rew_expand[i] += -10
+                    else:
+                        rew_expand[i] += 10
 
                 episode_reward_agent[i] += rew_expand[i]
 
