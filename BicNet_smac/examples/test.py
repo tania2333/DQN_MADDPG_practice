@@ -121,7 +121,8 @@ def main():
                     act_prob = (np.array(act_prob) + 1)/len(act_prob)
                 else : act_prob = np.array(act_prob)/sum_avail_act
 
-                index = np.random.choice(np.array(avail_actions_ind), p=act_prob.ravel())
+                # index = np.random.choice(np.array(avail_actions_ind), p=act_prob.ravel())
+                index = avail_actions_ind[np.argmax(act_prob)]
                 actions.append(index)
 
                 if(len(avail_actions_ind) == 1 and avail_actions_ind[0] == 0):
