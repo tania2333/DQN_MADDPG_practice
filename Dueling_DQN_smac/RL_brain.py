@@ -11,9 +11,7 @@ gym: 0.7.3
 """
 
 import numpy as np
-import pandas as pd
 import tensorflow as tf
-import baselines.common.tf_util as U
 import os
 import pickle
 np.random.seed(1)
@@ -28,6 +26,7 @@ class DeepQNetwork:
             n_features,
             sess,
             agent_id,
+            num_training,
             learning_rate=0.01,
             reward_decay=0.9,
             replace_target_iter=300,
@@ -35,13 +34,14 @@ class DeepQNetwork:
             batch_size=32,
             save_model_freq=100,
             max_epsilon=1,
-            min_epsilon=0.1,
+            min_epsilon=0,
             load_model=False,
     ):
         self.n_actions = n_actions
         self.n_features = n_features
         self.sess = sess
         self.agent_id = agent_id
+        self.num_training = num_training
         self.lr = learning_rate
         self.gamma = reward_decay
         self.replace_target_iter = replace_target_iter
@@ -68,7 +68,15 @@ class DeepQNetwork:
         self.replace_target_op = [tf.assign(t, e) for t, e in zip(t_params, e_params)]
 
         self.cost_his = []
-        self.sess, self.saver, self.summary_placeholders, self.update_ops, self.summary_op, self.summary_writer, self.summary_vars = self.init_sess()
+        if(self.load_model):
+            saver = tf.train.Saver(max_to_keep=100000000)
+            model_load_steps = 420000
+            model_file_load = os.path.join("models/", "agent_No_" + str(self.agent_id) + "/",
+                                           str(model_load_steps) + "_" + "model_segment_training/", "8m")
+            saver.restore(self.sess, model_file_load)
+            print("model trained for %s steps of agent %s have been loaded"%(model_load_steps, self.agent_id))
+        else:
+            self.sess, self.saver, self.summary_placeholders, self.update_ops, self.summary_op, self.summary_writer, self.summary_vars = self.init_sess()
 
         # 将网络计算的初始化工作完成
     def init_sess(self):
@@ -76,18 +84,11 @@ class DeepQNetwork:
         summary_placeholders, update_ops, summary_op, summary_vars = self.setup_summary()
         fileWritePath = os.path.join("logs/", "agent_No_" + str(self.agent_id) + "/")
         summary_writer = tf.summary.FileWriter(fileWritePath, self.sess.graph)
-
-        if self.load_model:
-            model_file_load = os.path.join("models/", "agent_No_" + str(self.agent_id) + "/",
-                                           str(35000) + "_" + "model_segment_training/", "8m")
-            U.load_state(model_file_load, self.sess)
-
-        else:
-            self.sess.run(tf.global_variables_initializer())
+        self.sess.run(tf.global_variables_initializer())
 
         # Load the file if the saved file exists
 
-        saver = tf.train.Saver()
+        saver = tf.train.Saver(max_to_keep=100000000)
 
         return self.sess, saver, summary_placeholders, update_ops, summary_op, summary_writer, summary_vars
 
@@ -98,8 +99,9 @@ class DeepQNetwork:
         with tf.variable_scope('eval_net'):
             # c_names(collections_names) are the collections to store variables                                512*512的网络结构
             c_names, n_l1, n_l2, w_initializer, b_initializer = \
-                ['eval_net_params', tf.GraphKeys.GLOBAL_VARIABLES], 512, 512,\
-                tf.random_normal_initializer(0., 0.3), tf.constant_initializer(0.1)  # config of layers
+                ['eval_net_params', tf.GraphKeys.GLOBAL_VARIABLES], 256, 256, \
+                tf.contrib.layers.xavier_initializer(), tf.contrib.layers.xavier_initializer()
+                # tf.random_normal_initializer(0., 0.3), tf.constant_initializer(0.1)  # config of layers
 
             # first layer. collections is used later when assign to target net
             with tf.variable_scope('l1'):
@@ -114,25 +116,17 @@ class DeepQNetwork:
                 l2 = tf.nn.relu(tf.matmul(l1, w2) + b2)
 
             # third layer. collections is used later when assign to target net
-            with tf.variable_scope('Value'):
-                w3 = tf.get_variable('w3', [n_l2, 1], initializer=w_initializer, collections=c_names)
-                b3 = tf.get_variable('b3', [1, 1], initializer=b_initializer, collections=c_names)
-                self.V = tf.matmul(l2, w3) + b3
-
-            with tf.variable_scope('Advantage'):
+            with tf.variable_scope('l3'):
                 w3 = tf.get_variable('w3', [n_l2, self.n_actions], initializer=w_initializer, collections=c_names)
                 b3 = tf.get_variable('b3', [1, self.n_actions], initializer=b_initializer, collections=c_names)
-                self.A = tf.matmul(l2, w3) + b3
-
-            with tf.variable_scope('Q'):
-                self.q_eval = self.V + (self.A - tf.reduce_mean(self.A, axis=1, keep_dims=True))
+                self.q_eval = tf.matmul(l2, w3) + b3
 
         with tf.variable_scope('loss'):
             self.loss = tf.reduce_mean(tf.squared_difference(self.q_target, self.q_eval))
 
         with tf.variable_scope('train'):
-            self._train_op = tf.train.RMSPropOptimizer(self.lr).minimize(self.loss)
-
+            # self._train_op = tf.train.RMSPropOptimizer(self.lr).minimize(self.loss)
+            self._train_op = tf.train.AdamOptimizer(self.lr, epsilon=1e-02).minimize(self.loss)
         # ------------------ build target_net ------------------
         self.s_ = tf.placeholder(tf.float32, [None, self.n_features], name='s_')    # input
         with tf.variable_scope('target_net'):
@@ -149,21 +143,13 @@ class DeepQNetwork:
             with tf.variable_scope('l2'):
                 w2 = tf.get_variable('w2', [n_l1, n_l2], initializer=w_initializer, collections=c_names)
                 b2 = tf.get_variable('b2', [1, n_l2], initializer=b_initializer, collections=c_names)
-                l2 = tf.matmul(l1, w2) + b2
+                l2 = tf.nn.relu(tf.matmul(l1, w2)) + b2
 
             # third layer. collections is used later when assign to target net
-            with tf.variable_scope('Value'):
-                w3 = tf.get_variable('w3', [n_l2, 1], initializer=w_initializer, collections=c_names)
-                b3 = tf.get_variable('b3', [1, 1], initializer=b_initializer, collections=c_names)
-                self.V = tf.matmul(l2, w3) + b3
-
-            with tf.variable_scope('Advantage'):
+            with tf.variable_scope('l3'):
                 w3 = tf.get_variable('w3', [n_l2, self.n_actions], initializer=w_initializer, collections=c_names)
                 b3 = tf.get_variable('b3', [1, self.n_actions], initializer=b_initializer, collections=c_names)
-                self.A = tf.matmul(l2, w3) + b3
-
-            with tf.variable_scope('Q'):
-                self.q_next = self.V + (self.A - tf.reduce_mean(self.A, axis=1, keep_dims=True))
+                self.q_next = tf.matmul(l2, w3) + b3
 
     def store_transition(self, s, a, r, s_):
         if not hasattr(self, 'memory_counter'):
@@ -180,10 +166,13 @@ class DeepQNetwork:
     def choose_action(self, observation):
         # to have batch dimension when feed into tf placeholder
         observation = observation[np.newaxis, :]
-
-        if np.random.uniform() < self.epsilon:
-            # forward feed the observation and get q value for every actions
-            action = np.random.randint(0, self.n_actions)
+        if(self.load_model == False):
+            if np.random.uniform() < self.epsilon:
+                # forward feed the observation and get q value for every actions
+                action = np.random.randint(0, self.n_actions)
+            else:
+                actions_value = self.sess.run(self.q_eval, feed_dict={self.s: observation})
+                action = np.argmax(actions_value)
         else:
             actions_value = self.sess.run(self.q_eval, feed_dict={self.s: observation})
             action = np.argmax(actions_value)
@@ -259,13 +248,16 @@ class DeepQNetwork:
 
         # Decreasing epsilon
         if self.epsilon > self.min_epsilon:
-            self.epsilon -= self.max_epsilon/self.learn_step_counter
+            self.epsilon -= self.max_epsilon/self.num_training
+        else:
+            self.epsilon = self.min_epsilon
 
 
         if (self.learn_step_counter % self.save_model_freq == 0):
             model_file_save = os.path.join("models/", "agent_No_"+str(self.agent_id)+"/", str(self.learn_step_counter) + "_" + "model_segment_training/", "8m")
-            if any(model_file_save):
-                os.makedirs(model_file_save, exist_ok=True)
+            dirname = os.path.dirname(model_file_save)
+            if any(dirname):
+                os.makedirs(dirname, exist_ok=True)
             self.saver.save(self.sess, model_file_save)
             print("Model trained for %s times is saved"%self.learn_step_counter)
 
