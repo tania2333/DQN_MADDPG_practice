@@ -11,128 +11,11 @@ gym: 0.7.3
 """
 
 import numpy as np
-import pandas as pd
 import tensorflow as tf
-import baselines.common.tf_util as U
 import os
 import pickle
 np.random.seed(1)
 tf.set_random_seed(1)
-
-class SumTree(object):
-    """
-    This SumTree code is a modified version and the original code is from:
-    https://github.com/jaara/AI-blog/blob/master/SumTree.py
-
-    Story data with its priority in the tree.
-    """
-    data_pointer = 0
-
-    def __init__(self, capacity):
-        self.capacity = capacity  # for all priority values
-        self.tree = np.zeros(2 * capacity - 1)
-        # [--------------Parent nodes-------------][-------leaves to recode priority-------]
-        #             size: capacity - 1                       size: capacity
-        self.data = np.zeros(capacity, dtype=object)  # for all transitions
-        # [--------------data frame-------------]
-        #             size: capacity
-
-    def add(self, p, data):
-        tree_idx = self.data_pointer + self.capacity - 1
-        print("tree_idx = ", tree_idx)
-        self.data[self.data_pointer] = data  # update data_frame    data数组用来储存transition
-        self.update(tree_idx, p)  # update tree_frame
-
-        self.data_pointer += 1
-        if self.data_pointer >= self.capacity:  # replace when exceed the capacity
-            self.data_pointer = 0
-
-    def update(self, tree_idx, p):
-        change = p - self.tree[tree_idx]
-        self.tree[tree_idx] = p                #tree数组用来储存优先级
-        # then propagate the change through tree
-        while tree_idx != 0:    # this method is faster than the recursive loop in the reference code
-            tree_idx = (tree_idx - 1) // 2    #while循环意味着当当前叶子节点的优先级发生变化时，还需要更新其根节点及根节点回溯的根节点的优先级的和
-            self.tree[tree_idx] += change
-
-    def get_leaf(self, v):
-        """
-        Tree structure and array storage:
-
-        Tree index:
-             0         -> storing priority sum
-            / \
-          1     2
-         / \   / \
-        3   4 5   6    -> storing priority for transitions
-
-        Array type for storing:
-        [0,1,2,3,4,5,6]
-        """
-        parent_idx = 0
-        while True:     # the while loop is faster than the method in the reference code
-            cl_idx = 2 * parent_idx + 1         # this leaf's left and right kids
-            cr_idx = cl_idx + 1
-            if cl_idx >= len(self.tree):        # reach bottom, end search
-                leaf_idx = parent_idx
-                break
-            else:       # downward search, always search for a higher priority node
-                if v <= self.tree[cl_idx]:
-                    parent_idx = cl_idx
-                else:
-                    v -= self.tree[cl_idx]
-                    parent_idx = cr_idx
-
-        data_idx = leaf_idx - self.capacity + 1
-        return leaf_idx, self.tree[leaf_idx], self.data[data_idx]
-
-    @property
-    def total_p(self):
-        return self.tree[0]  # the root
-
-
-class Memory(object):  # stored as ( s, a, r, s_ ) in SumTree
-    """
-    This Memory class is modified based on the original code from:
-    https://github.com/jaara/AI-blog/blob/master/Seaquest-DDQN-PER.py
-    """
-    epsilon = 0.01  # small amount to avoid zero priority
-    alpha = 0.6  # [0~1] convert the importance of TD error to priority
-    beta = 0.4  # importance-sampling, from initial value increasing to 1
-    beta_increment_per_sampling = 0.001
-    abs_err_upper = 1.  # clipped abs error
-
-    def __init__(self, capacity):
-        self.tree = SumTree(capacity)
-
-    def store(self, transition):
-        max_p = np.max(self.tree.tree[-self.tree.capacity:])
-        if max_p == 0:
-            max_p = self.abs_err_upper  #每次将transition存储于buffer时，先将每个叶子节点的优先级设置为1 p=1
-        self.tree.add(max_p, transition)   # set the max p for new p
-
-    def sample(self, n):   #采样时，再更新采样样本优先级的变化  n:batchsize
-        b_idx, b_memory, ISWeights = np.empty((n,), dtype=np.int32), np.empty((n, self.tree.data[0].size)), np.empty((n, 1))  #对应n个样本中每个样本的index,transition内容和优先级
-        pri_seg = self.tree.total_p / n       # priority segment
-        self.beta = np.min([1., self.beta + self.beta_increment_per_sampling])  # max = 1
-
-        min_prob = np.min(self.tree.tree[-self.tree.capacity:]) / self.tree.total_p     # for later calculate ISweight
-        for i in range(n):
-            a, b = pri_seg * i, pri_seg * (i + 1)
-            v = np.random.uniform(a, b)    #从a,b两值的区间内随机采样  优先级总和sum，分成32个区间，从每个区间随机取一个数。该数是前n个样本的优先级总和，第n个样本就是要找的
-            idx, p, data = self.tree.get_leaf(v)
-            prob = p / self.tree.total_p
-            ISWeights[i, 0] = np.power(prob/min_prob, -self.beta)
-            b_idx[i], b_memory[i, :] = idx, data
-        return b_idx, b_memory, ISWeights
-
-    def batch_update(self, tree_idx, abs_errors):
-        abs_errors += self.epsilon  # convert to abs and avoid 0
-        clipped_errors = np.minimum(abs_errors, self.abs_err_upper)
-        ps = np.power(clipped_errors, self.alpha)
-        for ti, p in zip(tree_idx, ps):
-            self.tree.update(ti, p)
-
 
 
 # Deep Q Network off-policy
@@ -143,6 +26,7 @@ class DeepQNetwork:
             n_features,
             sess,
             agent_id,
+            num_training,
             learning_rate=0.01,
             reward_decay=0.9,
             replace_target_iter=300,
@@ -150,13 +34,14 @@ class DeepQNetwork:
             batch_size=32,
             save_model_freq=100,
             max_epsilon=1,
-            min_epsilon=0.1,
+            min_epsilon=0,
             load_model=False,
     ):
         self.n_actions = n_actions
         self.n_features = n_features
         self.sess = sess
         self.agent_id = agent_id
+        self.num_training = num_training
         self.lr = learning_rate
         self.gamma = reward_decay
         self.replace_target_iter = replace_target_iter
@@ -175,7 +60,7 @@ class DeepQNetwork:
         self.episode = 0
 
         # initialize zero memory [s, a, r, s_]
-        self.memory = Memory(capacity=memory_size)
+        self.memory = np.zeros((self.memory_size, n_features * 2 + 2))
         # consist of [target_net, evaluate_net]
         self._build_net()
         t_params = tf.get_collection('target_net_params')
@@ -183,7 +68,15 @@ class DeepQNetwork:
         self.replace_target_op = [tf.assign(t, e) for t, e in zip(t_params, e_params)]
 
         self.cost_his = []
-        self.sess, self.saver, self.summary_placeholders, self.update_ops, self.summary_op, self.summary_writer, self.summary_vars = self.init_sess()
+        if(self.load_model):
+            saver = tf.train.Saver(max_to_keep=100000000)
+            model_load_steps = 420000
+            model_file_load = os.path.join("models/", "agent_No_" + str(self.agent_id) + "/",
+                                           str(model_load_steps) + "_" + "model_segment_training/", "8m")
+            saver.restore(self.sess, model_file_load)
+            print("model trained for %s steps of agent %s have been loaded"%(model_load_steps, self.agent_id))
+        else:
+            self.sess, self.saver, self.summary_placeholders, self.update_ops, self.summary_op, self.summary_writer, self.summary_vars = self.init_sess()
 
         # 将网络计算的初始化工作完成
     def init_sess(self):
@@ -191,18 +84,11 @@ class DeepQNetwork:
         summary_placeholders, update_ops, summary_op, summary_vars = self.setup_summary()
         fileWritePath = os.path.join("logs/", "agent_No_" + str(self.agent_id) + "/")
         summary_writer = tf.summary.FileWriter(fileWritePath, self.sess.graph)
-
-        if self.load_model:
-            model_file_load = os.path.join("models/", "agent_No_" + str(self.agent_id) + "/",
-                                           str(35000) + "_" + "model_segment_training/", "8m")
-            U.load_state(model_file_load, self.sess)
-
-        else:
-            self.sess.run(tf.global_variables_initializer())
+        self.sess.run(tf.global_variables_initializer())
 
         # Load the file if the saved file exists
 
-        saver = tf.train.Saver()
+        saver = tf.train.Saver(max_to_keep=100000000)
 
         return self.sess, saver, summary_placeholders, update_ops, summary_op, summary_writer, summary_vars
 
@@ -210,12 +96,12 @@ class DeepQNetwork:
         # ------------------ build evaluate_net ------------------
         self.s = tf.placeholder(tf.float32, [None, self.n_features], name='s')  # input
         self.q_target = tf.placeholder(tf.float32, [None, self.n_actions], name='Q_target')  # for calculating loss
-        self.ISWeights = tf.placeholder(tf.float32, [None, 1], name='IS_weights')
         with tf.variable_scope('eval_net'):
             # c_names(collections_names) are the collections to store variables                                512*512的网络结构
             c_names, n_l1, n_l2, w_initializer, b_initializer = \
-                ['eval_net_params', tf.GraphKeys.GLOBAL_VARIABLES], 512, 512,\
-                tf.random_normal_initializer(0., 0.3), tf.constant_initializer(0.1)  # config of layers
+                ['eval_net_params', tf.GraphKeys.GLOBAL_VARIABLES], 256, 256, \
+                tf.contrib.layers.xavier_initializer(), tf.contrib.layers.xavier_initializer()
+                # tf.random_normal_initializer(0., 0.3), tf.constant_initializer(0.1)  # config of layers
 
             # first layer. collections is used later when assign to target net
             with tf.variable_scope('l1'):
@@ -236,11 +122,11 @@ class DeepQNetwork:
                 self.q_eval = tf.matmul(l2, w3) + b3
 
         with tf.variable_scope('loss'):
-            self.abs_errors = tf.reduce_sum(tf.abs(self.q_target - self.q_eval), axis=1)  # for updating Sumtree
-            self.loss = tf.reduce_mean(self.ISWeights * tf.squared_difference(self.q_target, self.q_eval))
-        with tf.variable_scope('train'):
-            self._train_op = tf.train.RMSPropOptimizer(self.lr).minimize(self.loss)
+            self.loss = tf.reduce_mean(tf.squared_difference(self.q_target, self.q_eval))
 
+        with tf.variable_scope('train'):
+            # self._train_op = tf.train.RMSPropOptimizer(self.lr).minimize(self.loss)
+            self._train_op = tf.train.AdamOptimizer(self.lr, epsilon=1e-02).minimize(self.loss)
         # ------------------ build target_net ------------------
         self.s_ = tf.placeholder(tf.float32, [None, self.n_features], name='s_')    # input
         with tf.variable_scope('target_net'):
@@ -257,7 +143,7 @@ class DeepQNetwork:
             with tf.variable_scope('l2'):
                 w2 = tf.get_variable('w2', [n_l1, n_l2], initializer=w_initializer, collections=c_names)
                 b2 = tf.get_variable('b2', [1, n_l2], initializer=b_initializer, collections=c_names)
-                l2 = tf.matmul(l1, w2) + b2
+                l2 = tf.nn.relu(tf.matmul(l1, w2)) + b2
 
             # third layer. collections is used later when assign to target net
             with tf.variable_scope('l3'):
@@ -266,17 +152,27 @@ class DeepQNetwork:
                 self.q_next = tf.matmul(l2, w3) + b3
 
     def store_transition(self, s, a, r, s_):
+        if not hasattr(self, 'memory_counter'):
+            self.memory_counter = 0
 
         transition = np.hstack((s, [a, r], s_))  #往水平方向平铺，所以是一行数
-        self.memory.store(transition)
+
+        # replace the old memory with new memory
+        index = self.memory_counter % self.memory_size
+        self.memory[index, :] = transition
+
+        self.memory_counter += 1
 
     def choose_action(self, observation):
         # to have batch dimension when feed into tf placeholder
         observation = observation[np.newaxis, :]
-
-        if np.random.uniform() < self.epsilon:
-            # forward feed the observation and get q value for every actions
-            action = np.random.randint(0, self.n_actions)
+        if(self.load_model == False):
+            if np.random.uniform() < self.epsilon:
+                # forward feed the observation and get q value for every actions
+                action = np.random.randint(0, self.n_actions)
+            else:
+                actions_value = self.sess.run(self.q_eval, feed_dict={self.s: observation})
+                action = np.argmax(actions_value)
         else:
             actions_value = self.sess.run(self.q_eval, feed_dict={self.s: observation})
             action = np.argmax(actions_value)
@@ -284,12 +180,18 @@ class DeepQNetwork:
 
     def learn(self):
         # check to replace target parameters
+        if(self.memory_counter < self.batch_size):
+            return
         if self.learn_step_counter % self.replace_target_iter == 0:
             self.sess.run(self.replace_target_op)
             # print('\ntarget_params_replaced\n')
 
         # sample batch memory from all memory
-        tree_idx, batch_memory, ISWeights = self.memory.sample(self.batch_size)
+        if self.memory_counter > self.memory_size:
+            sample_index = np.random.choice(self.memory_size, size=self.batch_size)
+        else:
+            sample_index = np.random.choice(self.memory_counter, size=self.batch_size)
+        batch_memory = self.memory[sample_index, :]
 
         q_next, q_eval = self.sess.run(
             [self.q_next, self.q_eval],
@@ -334,10 +236,9 @@ class DeepQNetwork:
         """
 
         # train eval network
-        _, abs_errors, self.cost = self.sess.run([self._train_op, self.abs_errors, self.loss],
-                                                 feed_dict={self.s: batch_memory[:, :self.n_features],
-                                                            self.q_target: q_target,
-                                                            self.ISWeights: ISWeights})
+        _, self.cost = self.sess.run([self._train_op, self.loss],
+                                     feed_dict={self.s: batch_memory[:, :self.n_features],
+                                                self.q_target: q_target})
 
         self.cost_his.append(self.cost)
 
@@ -347,13 +248,16 @@ class DeepQNetwork:
 
         # Decreasing epsilon
         if self.epsilon > self.min_epsilon:
-            self.epsilon -= self.max_epsilon/self.learn_step_counter
+            self.epsilon -= self.max_epsilon/self.num_training
+        else:
+            self.epsilon = self.min_epsilon
 
 
         if (self.learn_step_counter % self.save_model_freq == 0):
             model_file_save = os.path.join("models/", "agent_No_"+str(self.agent_id)+"/", str(self.learn_step_counter) + "_" + "model_segment_training/", "8m")
-            if any(model_file_save):
-                os.makedirs(model_file_save, exist_ok=True)
+            dirname = os.path.dirname(model_file_save)
+            if any(dirname):
+                os.makedirs(dirname, exist_ok=True)
             self.saver.save(self.sess, model_file_save)
             print("Model trained for %s times is saved"%self.learn_step_counter)
 
