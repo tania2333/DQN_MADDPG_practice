@@ -14,6 +14,7 @@ import numpy as np
 import tensorflow as tf
 import os
 import pickle
+from replay_buffer import Memory
 np.random.seed(1)
 tf.set_random_seed(1)
 
@@ -60,7 +61,7 @@ class DeepQNetwork:
         self.episode = 0
 
         # initialize zero memory [s, a, r, s_]
-        self.memory = np.zeros((self.memory_size, n_features * 2 + 2))
+        self.memory = Memory(capacity=memory_size) #np.zeros((self.memory_size, n_features * 2 + 2))
         # consist of [target_net, evaluate_net]
         self._build_net()
         t_params = tf.get_collection('target_net_params')
@@ -96,6 +97,7 @@ class DeepQNetwork:
         # ------------------ build evaluate_net ------------------
         self.s = tf.placeholder(tf.float32, [None, self.n_features], name='s')  # input
         self.q_target = tf.placeholder(tf.float32, [None, self.n_actions], name='Q_target')  # for calculating loss
+        self.ISWeights = tf.placeholder(tf.float32, [None, 1], name='IS_weights')
         with tf.variable_scope('eval_net'):
             # c_names(collections_names) are the collections to store variables                                512*512的网络结构
             c_names, n_l1, n_l2, w_initializer, b_initializer = \
@@ -122,11 +124,14 @@ class DeepQNetwork:
                 self.q_eval = tf.matmul(l2, w3) + b3
 
         with tf.variable_scope('loss'):
-            self.loss = tf.reduce_mean(tf.squared_difference(self.q_target, self.q_eval))
+            self.abs_errors = tf.reduce_sum(tf.abs(self.q_target - self.q_eval), axis=1)
+            self.loss = tf.reduce_mean(self.ISWeights * tf.squared_difference(self.q_target, self.q_eval))
+                       #tf.reduce_mean(tf.squared_difference(self.q_target, self.q_eval))
 
         with tf.variable_scope('train'):
             # self._train_op = tf.train.RMSPropOptimizer(self.lr).minimize(self.loss)
             self._train_op = tf.train.AdamOptimizer(self.lr, epsilon=1e-02).minimize(self.loss)
+
         # ------------------ build target_net ------------------
         self.s_ = tf.placeholder(tf.float32, [None, self.n_features], name='s_')    # input
         with tf.variable_scope('target_net'):
@@ -152,16 +157,18 @@ class DeepQNetwork:
                 self.q_next = tf.matmul(l2, w3) + b3
 
     def store_transition(self, s, a, r, s_):
-        if not hasattr(self, 'memory_counter'):
-            self.memory_counter = 0
-
-        transition = np.hstack((s, [a, r], s_))  #往水平方向平铺，所以是一行数
-
-        # replace the old memory with new memory
-        index = self.memory_counter % self.memory_size
-        self.memory[index, :] = transition
-
-        self.memory_counter += 1
+        transition = np.hstack((s, [a, r], s_))
+        self.memory.store(transition)
+        # if not hasattr(self, 'memory_counter'):
+        #     self.memory_counter = 0
+        #
+        # transition = np.hstack((s, [a, r], s_))  #往水平方向平铺，所以是一行数
+        #
+        # # replace the old memory with new memory
+        # index = self.memory_counter % self.memory_size
+        # self.memory[index, :] = transition
+        #
+        # self.memory_counter += 1
 
     def choose_action(self, observation):
         # to have batch dimension when feed into tf placeholder
@@ -180,19 +187,19 @@ class DeepQNetwork:
 
     def learn(self):
         # check to replace target parameters
-        if(self.memory_counter < self.batch_size):
-            return
+        # if(self.memory_counter < self.batch_size):
+        #     return
         if self.learn_step_counter % self.replace_target_iter == 0:
             self.sess.run(self.replace_target_op)
             # print('\ntarget_params_replaced\n')
 
         # sample batch memory from all memory
-        if self.memory_counter > self.memory_size:
-            sample_index = np.random.choice(self.memory_size, size=self.batch_size)
-        else:
-            sample_index = np.random.choice(self.memory_counter, size=self.batch_size)
-        batch_memory = self.memory[sample_index, :]
-
+        # if self.memory_counter > self.memory_size:
+        #     sample_index = np.random.choice(self.memory_size, size=self.batch_size)
+        # else:
+        #     sample_index = np.random.choice(self.memory_counter, size=self.batch_size)
+        # batch_memory = self.memory[sample_index, :]
+        tree_idx, batch_memory, ISWeights = self.memory.sample(self.batch_size)
         q_next, q_eval = self.sess.run(
             [self.q_next, self.q_eval],
             feed_dict={
@@ -234,11 +241,15 @@ class DeepQNetwork:
         We then backpropagate this error w.r.t the corresponding action to network,
         leave other action as error=0 cause we didn't choose it.
         """
-
+        _, abs_errors, self.cost = self.sess.run([self._train_op, self.abs_errors, self.loss],
+                                                 feed_dict={self.s: batch_memory[:, :self.n_features],
+                                                            self.q_target: q_target,
+                                                            self.ISWeights: ISWeights})
+        self.memory.batch_update(tree_idx, abs_errors)
         # train eval network
-        _, self.cost = self.sess.run([self._train_op, self.loss],
-                                     feed_dict={self.s: batch_memory[:, :self.n_features],
-                                                self.q_target: q_target})
+        # _, self.cost = self.sess.run([self._train_op, self.loss],
+        #                              feed_dict={self.s: batch_memory[:, :self.n_features],
+        #                                         self.q_target: q_target})
 
         self.cost_his.append(self.cost)
 
