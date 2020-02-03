@@ -250,7 +250,7 @@ class DeepQNetwork:
         if self.epsilon > self.min_epsilon:
             self.epsilon -= self.max_epsilon/self.num_training
         else:
-            self.episode = self.min_epsilon
+            self.epsilon = self.min_epsilon
 
 
         if (self.learn_step_counter % self.save_model_freq == 0):
