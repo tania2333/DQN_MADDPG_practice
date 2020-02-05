@@ -25,7 +25,7 @@ class SumTree(object):
 
     def add(self, p, data):
         tree_idx = self.data_pointer + self.capacity - 1
-        print("tree_idx = ", tree_idx)
+        # print("tree_idx = ", tree_idx)
         self.data[self.data_pointer] = data  # update data_frame    data数组用来储存transition
         self.update(tree_idx, p)  # update tree_frame
 
@@ -86,7 +86,7 @@ class Memory(object):  # stored as ( s, a, r, s_ ) in SumTree
     alpha = 0.6  # [0~1] convert the importance of TD error to priority
     beta = 0.4  # importance-sampling, from initial value increasing to 1
     beta_increment_per_sampling = 0.001
-    abs_err_upper = 1.  # clipped abs error
+    abs_err_upper = 0.00001 #1.  # clipped abs error
 
     def __init__(self, capacity):
         self.tree = SumTree(capacity)
@@ -102,14 +102,16 @@ class Memory(object):  # stored as ( s, a, r, s_ ) in SumTree
         pri_seg = self.tree.total_p / n       # priority segment
         self.beta = np.min([1., self.beta + self.beta_increment_per_sampling])  # max = 1
 
-        min_prob = np.min(self.tree.tree[-self.tree.capacity:]) / self.tree.total_p     # for later calculate ISweight
+        # min_prob = np.min(self.tree.tree[-self.tree.capacity:]) / self.tree.total_p     # for later calculate ISweight
         for i in range(n):
             a, b = pri_seg * i, pri_seg * (i + 1)
             v = np.random.uniform(a, b)    #从a,b两值的区间内随机采样  优先级总和sum，分成32个区间，从每个区间随机取一个数。该数是前n个样本的优先级总和，第n个样本就是要找的
             idx, p, data = self.tree.get_leaf(v)
             prob = p / self.tree.total_p
-            ISWeights[i, 0] = np.power(prob/min_prob, -self.beta)
+            # ISWeights[i, 0] = np.power(prob/min_prob, -self.beta)
+            ISWeights[i, 0] = np.power(prob * self.tree.capacity, -self.beta)
             b_idx[i], b_memory[i, :] = idx, data
+        ISWeights = ISWeights / np.max(ISWeights)
         return b_idx, b_memory, ISWeights
 
     def batch_update(self, tree_idx, abs_errors):
