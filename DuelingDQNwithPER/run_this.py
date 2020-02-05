@@ -146,7 +146,7 @@ if __name__ == "__main__":
                                   replace_target_iter=5000,
                                   memory_size=Num_Exploration,
                                   batch_size=32,
-                                  save_model_freq=20000,
+                                  save_model_freq=10000,
                                   load_model=False,
                                   )
 
